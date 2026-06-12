@@ -37,7 +37,6 @@ export function TaskList({
         </View>
         <View style={styles.headerText}>
           <Text style={[styles.title, { color: theme.accent }]}>{title}</Text>
-          <Text style={styles.tagline}>{theme.tagline}</Text>
         </View>
       </View>
 
