@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     lineHeight: 20,
   },
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   name: {
-    fontSize: 18,
+    fontSize: 20,
     lineHeight: 24,
     fontWeight: '600',
     color: APP_COLORS.text,
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   metaText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -243,19 +243,19 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   timeBtnText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
   },
   spentChip: {
     paddingVertical: SPACING.sm,
   },
   spentText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
   moveLabel: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
     marginLeft: 'auto',
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   moveText: {
-    fontSize: 18,
+    fontSize: 20,
   },
   corner: {
     flexDirection: 'row',
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   createdText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
   },
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   webDeleteText: {
-    fontSize: 18,
+    fontSize: 20,
     lineHeight: 20,
     color: APP_COLORS.delete,
     fontWeight: '700',
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
   },
 });

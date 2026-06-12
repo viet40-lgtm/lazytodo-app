@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
     marginBottom: -16,
   },
   text: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '700',
     lineHeight: 28,
     color: APP_COLORS.quote,

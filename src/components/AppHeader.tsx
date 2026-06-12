@@ -76,14 +76,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   eyebrow: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: APP_COLORS.headerMuted,
     letterSpacing: 0.2,
     marginBottom: 2,
   },
   title: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '800',
     color: APP_COLORS.headerText,
     letterSpacing: -0.6,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   accountText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: APP_COLORS.headerAccent,
   },
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     maxWidth: 180,
   },
   dateText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: APP_COLORS.headerAccent,
     textAlign: 'right',

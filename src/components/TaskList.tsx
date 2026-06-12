@@ -85,19 +85,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   icon: {
-    fontSize: 20,
+    fontSize: 25,
   },
   headerText: {
     flex: 1,
     minWidth: 0,
   },
   title: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
   tagline: {
-    fontSize: 18,
+    fontSize: 20,
     color: APP_COLORS.textSubtle,
     marginTop: 1,
   },
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     backgroundColor: APP_COLORS.surfaceMuted,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 20,
     lineHeight: 24,
     color: APP_COLORS.textMuted,
   },
