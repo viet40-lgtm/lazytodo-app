@@ -1,35 +1,46 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppHeader } from '../src/components/AppHeader';
+import { AuthModal } from '../src/components/AuthModal';
 import { CompletionCelebration } from '../src/components/CompletionCelebration';
 import { FloatingButton } from '../src/components/FloatingButton';
-import { ProgressBar } from '../src/components/ProgressBar';
 import { Quote } from '../src/components/Quote';
 import { TaskList } from '../src/components/TaskList';
 import { TaskModal } from '../src/components/TaskModal';
-import { APP_COLORS } from '../src/constants';
+import { APP_COLORS, FAB_SIZE, SCREEN_PADDING } from '../src/constants';
 import { getRandomQuote } from '../src/data/quotes';
+import { useAuth } from '../src/hooks/useAuth';
 import { useTasks } from '../src/hooks/useTasks';
-import type { Recurring, Task } from '../src/types';
+import type { Recurring, Task, TaskSection } from '../src/types';
 
 export default function HomeScreen() {
   const [quote] = useState(getRandomQuote);
   const [modalOpen, setModalOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [defaultSection, setDefaultSection] = useState<TaskSection>('today');
+
+  const auth = useAuth();
 
   const {
     hydrated,
+    syncing,
     tasks,
-    completedCount,
-    totalCount,
     allDone,
     celebratedToday,
     addTask,
     updateTask,
+    logTime,
     toggleTask,
     deleteTask,
     markCelebrated,
-  } = useTasks();
+  } = useTasks(auth.userId);
+
+  const todayTasks = useMemo(() => tasks.filter((task) => task.section === 'today'), [tasks]);
+  const weeklyTasks = useMemo(() => tasks.filter((task) => task.section === 'weekly'), [tasks]);
+  const monthlyTasks = useMemo(() => tasks.filter((task) => task.section === 'monthly'), [tasks]);
+  const yearlyTasks = useMemo(() => tasks.filter((task) => task.section === 'yearly'), [tasks]);
 
   useEffect(() => {
     if (allDone && !celebratedToday) {
@@ -37,7 +48,12 @@ export default function HomeScreen() {
     }
   }, [allDone, celebratedToday, markCelebrated]);
 
-  const handleSave = (data: { name: string; reminder?: string; recurring?: Recurring }) => {
+  const handleSave = (data: {
+    name: string;
+    section: TaskSection;
+    reminder?: string;
+    recurring?: Recurring;
+  }) => {
     if (editingTask) {
       updateTask(editingTask.id, data);
     } else {
@@ -45,13 +61,15 @@ export default function HomeScreen() {
     }
   };
 
-  const openAdd = () => {
+  const openAdd = (section: TaskSection = 'today') => {
     setEditingTask(null);
+    setDefaultSection(section);
     setModalOpen(true);
   };
 
   const openEdit = (task: Task) => {
     setEditingTask(task);
+    setDefaultSection(task.section);
     setModalOpen(true);
   };
 
@@ -70,21 +88,88 @@ export default function HomeScreen() {
     );
   }
 
+  const moveGoal = (id: string, section: TaskSection) => {
+    updateTask(id, { section });
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <AppHeader
+        onAccountPress={() => setAuthOpen(true)}
+        loggedIn={Boolean(auth.userId)}
+        syncing={syncing}
+        showAccount={auth.configured}
+      />
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <Quote text={quote} />
-        <ProgressBar completed={completedCount} total={totalCount} />
-        <TaskList tasks={tasks} onToggle={toggleTask} onEdit={openEdit} onDelete={deleteTask} />
+        <TaskList
+          section="today"
+          title="Today"
+          tasks={todayTasks}
+          onToggle={toggleTask}
+          onEdit={openEdit}
+          onDelete={deleteTask}
+          onLogTime={logTime}
+          onMoveSection={moveGoal}
+          emptyText="No goals yet. Tap + when you're ready."
+        />
+        <TaskList
+          section="weekly"
+          title="Week"
+          tasks={weeklyTasks}
+          onToggle={toggleTask}
+          onEdit={openEdit}
+          onDelete={deleteTask}
+          onLogTime={logTime}
+          onMoveSection={moveGoal}
+          emptyText="Bigger stuff for this week."
+        />
+        <TaskList
+          section="monthly"
+          title="Month"
+          tasks={monthlyTasks}
+          onToggle={toggleTask}
+          onEdit={openEdit}
+          onDelete={deleteTask}
+          onLogTime={logTime}
+          onMoveSection={moveGoal}
+          emptyText="Goals for this month."
+        />
+        <TaskList
+          section="yearly"
+          title="Year"
+          tasks={yearlyTasks}
+          onToggle={toggleTask}
+          onEdit={openEdit}
+          onDelete={deleteTask}
+          onLogTime={logTime}
+          onMoveSection={moveGoal}
+          emptyText="Long-term goals. No rush."
+        />
         <CompletionCelebration show={allDone} />
       </ScrollView>
 
-      <FloatingButton onPress={openAdd} />
-      <TaskModal visible={modalOpen} task={editingTask} onSave={handleSave} onClose={closeModal} />
+      <FloatingButton onPress={() => openAdd('today')} />
+      <TaskModal
+        visible={modalOpen}
+        task={editingTask}
+        defaultSection={defaultSection}
+        onSave={handleSave}
+        onClose={closeModal}
+      />
+      <AuthModal
+        visible={authOpen}
+        configured={auth.configured}
+        email={auth.email}
+        onSignIn={auth.signIn}
+        onSignUp={auth.signUp}
+        onSignOut={auth.signOut}
+        onClose={() => setAuthOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -100,12 +185,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 120,
-    gap: 28,
-    maxWidth: 480,
+    paddingHorizontal: SCREEN_PADDING,
+    paddingTop: SCREEN_PADDING,
+    paddingBottom: SCREEN_PADDING + FAB_SIZE + SCREEN_PADDING,
+    gap: 24,
     width: '100%',
-    alignSelf: 'center',
   },
 });

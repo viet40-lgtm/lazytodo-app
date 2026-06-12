@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LEGACY_WEB_STORAGE_KEY, STORAGE_KEY } from '../constants';
-import type { AppState, Task } from '../types';
+import type { AppState, Task, TaskSection } from '../types';
 import { resetRecurringTasks } from '../utils/recurring';
 
 const defaultState = (): AppState => ({
@@ -23,16 +23,31 @@ function normalizeTask(raw: unknown): Task | null {
   if (typeof task.id !== 'string' || typeof task.name !== 'string') return null;
 
   const createdAt = parseTimestamp(task.createdAt) ?? Date.now();
+  const section: TaskSection =
+    task.section === 'weekly' ||
+    task.section === 'monthly' ||
+    task.section === 'yearly'
+      ? task.section
+      : 'today';
+  const spentMinutes =
+    typeof task.spentMinutes === 'number' && task.spentMinutes >= 0
+      ? Math.round(task.spentMinutes)
+      : 0;
 
   return {
     id: task.id,
     name: task.name.trim(),
+    section,
+    spentMinutes,
     completed: Boolean(task.completed),
     ...(parseTimestamp(task.completedAt) !== undefined
       ? { completedAt: parseTimestamp(task.completedAt) }
       : {}),
     ...(typeof task.reminder === 'string' && task.reminder ? { reminder: task.reminder } : {}),
-    ...(task.recurring === 'daily' || task.recurring === 'weekly' || task.recurring === 'monthly'
+    ...(task.recurring === 'daily' ||
+    task.recurring === 'weekly' ||
+    task.recurring === 'monthly' ||
+    task.recurring === 'yearly'
       ? { recurring: task.recurring }
       : {}),
     ...(typeof task.notificationId === 'string' ? { notificationId: task.notificationId } : {}),

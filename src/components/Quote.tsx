@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { APP_COLORS } from '../constants';
+import { APP_COLORS, RADIUS, SPACING, softShadow } from '../constants';
 
 interface QuoteProps {
   text: string;
@@ -8,6 +8,7 @@ interface QuoteProps {
 export function Quote({ text }: QuoteProps) {
   return (
     <View style={styles.container}>
+      <Text style={styles.mark}>“</Text>
       <Text style={styles.text}>{text}</Text>
     </View>
   );
@@ -15,13 +16,25 @@ export function Quote({ text }: QuoteProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 8,
+    backgroundColor: APP_COLORS.surface,
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.lg,
+    ...softShadow(0.06, 10, 3),
+  },
+  mark: {
+    fontSize: 44,
+    lineHeight: 44,
+    fontWeight: '800',
+    color: APP_COLORS.accentSoft,
+    marginBottom: -16,
   },
   text: {
-    fontSize: 28,
-    fontWeight: '500',
-    lineHeight: 38,
-    color: APP_COLORS.text,
-    letterSpacing: -0.4,
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 28,
+    color: APP_COLORS.quote,
+    letterSpacing: -0.3,
   },
 });

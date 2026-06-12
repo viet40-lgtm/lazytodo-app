@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { APP_COLORS } from '../constants';
+import { APP_COLORS, FAB_SIZE, RADIUS, SCREEN_PADDING, softShadow } from '../constants';
 
 interface FloatingButtonProps {
   onPress: () => void;
@@ -7,7 +7,12 @@ interface FloatingButtonProps {
 
 export function FloatingButton({ onPress }: FloatingButtonProps) {
   return (
-    <Pressable style={styles.fab} onPress={onPress} accessibilityRole="button" accessibilityLabel="Add task">
+    <Pressable
+      style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Add goal"
+    >
       <Text style={styles.plus}>+</Text>
     </Pressable>
   );
@@ -16,24 +21,24 @@ export function FloatingButton({ onPress }: FloatingButtonProps) {
 const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
-    right: 24,
-    bottom: 24,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    right: SCREEN_PADDING,
+    bottom: SCREEN_PADDING,
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    borderRadius: RADIUS.lg,
     backgroundColor: APP_COLORS.fab,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    ...softShadow(0.28, 16, 6),
+  },
+  fabPressed: {
+    transform: [{ scale: 0.94 }],
+    backgroundColor: APP_COLORS.primaryDark,
   },
   plus: {
     color: APP_COLORS.fabText,
-    fontSize: 32,
-    lineHeight: 34,
+    fontSize: 34,
+    lineHeight: 36,
     fontWeight: '300',
     marginTop: -2,
   },

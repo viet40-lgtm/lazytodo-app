@@ -1,12 +1,15 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { APP_COLORS } from '../src/constants';
 
+const RootContainer = Platform.OS === 'web' ? View : GestureHandlerRootView;
+
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <RootContainer style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar style="dark" />
         <Stack
@@ -18,6 +21,6 @@ export default function RootLayout() {
           <Stack.Screen name="index" />
         </Stack>
       </SafeAreaProvider>
-    </GestureHandlerRootView>
+    </RootContainer>
   );
 }

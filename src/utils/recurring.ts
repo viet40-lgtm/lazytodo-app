@@ -18,6 +18,10 @@ function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
+function startOfYear(date: Date): Date {
+  return new Date(date.getFullYear(), 0, 1);
+}
+
 function periodStart(recurring: Recurring, date: Date): Date {
   switch (recurring) {
     case 'daily':
@@ -26,6 +30,8 @@ function periodStart(recurring: Recurring, date: Date): Date {
       return startOfWeek(date);
     case 'monthly':
       return startOfMonth(date);
+    case 'yearly':
+      return startOfYear(date);
   }
 }
 

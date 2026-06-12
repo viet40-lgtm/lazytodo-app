@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
-import { APP_COLORS } from '../constants';
+import { APP_COLORS, RADIUS, SECTION_THEMES, SPACING, softShadow } from '../constants';
 
 interface CompletionCelebrationProps {
   show: boolean;
@@ -10,6 +10,7 @@ interface CompletionCelebrationProps {
 export function CompletionCelebration({ show }: CompletionCelebrationProps) {
   const { width } = useWindowDimensions();
   const [fireConfetti, setFireConfetti] = useState(false);
+  const useNativeConfetti = Platform.OS !== 'web';
 
   useEffect(() => {
     if (show) {
@@ -23,15 +24,22 @@ export function CompletionCelebration({ show }: CompletionCelebrationProps) {
 
   return (
     <View style={styles.container}>
-      {fireConfetti ? (
+      {useNativeConfetti && fireConfetti ? (
         <ConfettiCannon
           count={80}
           origin={{ x: width / 2, y: 0 }}
           fadeOut
-          colors={[APP_COLORS.green, APP_COLORS.text, '#e5e5e5']}
+          colors={[
+            SECTION_THEMES.today.accent,
+            SECTION_THEMES.weekly.accent,
+            SECTION_THEMES.monthly.accent,
+            SECTION_THEMES.yearly.accent,
+          ]}
         />
       ) : null}
+      <Text style={styles.emoji}>🎉</Text>
       <Text style={styles.message}>You did enough today.</Text>
+      <Text style={styles.subtext}>Every goal is checked off. Go relax.</Text>
     </View>
   );
 }
@@ -39,12 +47,27 @@ export function CompletionCelebration({ show }: CompletionCelebrationProps) {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
+    backgroundColor: SECTION_THEMES.today.accentSoft,
+    borderRadius: RADIUS.lg,
+    gap: SPACING.xs,
+    ...softShadow(0.08, 12, 4),
+  },
+  emoji: {
+    fontSize: 36,
   },
   message: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: APP_COLORS.green,
+    fontSize: 25,
+    fontWeight: '800',
+    color: APP_COLORS.primaryDark,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  subtext: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: APP_COLORS.textMuted,
     textAlign: 'center',
   },
 });
