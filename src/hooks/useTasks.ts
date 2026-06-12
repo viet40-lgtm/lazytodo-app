@@ -8,6 +8,23 @@ import { isGoalComplete } from '../utils/progress';
 function sortTasks(tasks: Task[]): Task[] {
   return [...tasks].sort((a, b) => {
     if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    
+    if (a.order !== undefined || b.order !== undefined) {
+      const oA = a.order ?? 99999999;
+      const oB = b.order ?? 99999999;
+      if (oA !== oB) return oA - oB;
+    }
+    
+    const hasRemA = !!a.reminder;
+    const hasRemB = !!b.reminder;
+    if (hasRemA !== hasRemB) return hasRemA ? -1 : 1;
+    
+    if (hasRemA && hasRemB) {
+      const timeA = new Date(a.reminder!).getTime();
+      const timeB = new Date(b.reminder!).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+    }
+    
     return a.createdAt - b.createdAt;
   });
 }
@@ -150,6 +167,46 @@ export function useTasks(userId: string | null = null) {
     updateTasks((tasks) => tasks.filter((task) => task.id !== id));
   }, [updateTasks]);
 
+  const reorderTask = useCallback((id: string, direction: 'up' | 'down') => {
+    updateTasks((tasks) => {
+      const idx = tasks.findIndex(t => t.id === id);
+      if (idx === -1) return tasks;
+      const target = tasks[idx];
+      
+      const siblingTasks = sortTasks(tasks.filter(t => t.section === target.section && t.completed === target.completed));
+      const siblingIdx = siblingTasks.findIndex(t => t.id === id);
+      
+      if (direction === 'up' && siblingIdx > 0) {
+        const swapIdx = siblingIdx - 1;
+        return tasks.map(t => {
+          if (t.section !== target.section || t.completed !== target.completed) return t;
+          const sIdx = siblingTasks.findIndex(s => s.id === t.id);
+          if (sIdx === -1) return t;
+          
+          let newOrder = sIdx * 1000;
+          if (sIdx === siblingIdx) newOrder = swapIdx * 1000;
+          if (sIdx === swapIdx) newOrder = siblingIdx * 1000;
+          
+          return { ...t, order: newOrder };
+        });
+      } else if (direction === 'down' && siblingIdx < siblingTasks.length - 1) {
+        const swapIdx = siblingIdx + 1;
+        return tasks.map(t => {
+          if (t.section !== target.section || t.completed !== target.completed) return t;
+          const sIdx = siblingTasks.findIndex(s => s.id === t.id);
+          if (sIdx === -1) return t;
+          
+          let newOrder = sIdx * 1000;
+          if (sIdx === siblingIdx) newOrder = swapIdx * 1000;
+          if (sIdx === swapIdx) newOrder = siblingIdx * 1000;
+          
+          return { ...t, order: newOrder };
+        });
+      }
+      return tasks;
+    });
+  }, [updateTasks]);
+
   const markCelebrated = useCallback(() => {
     const today = new Date().toISOString().slice(0, 10);
     setState((prev) => (prev ? { ...prev, lastCelebrationDate: today, savedAt: Date.now() } : prev));
@@ -173,6 +230,7 @@ export function useTasks(userId: string | null = null) {
     logTime,
     toggleTask,
     deleteTask,
+    reorderTask,
     markCelebrated,
   };
 }

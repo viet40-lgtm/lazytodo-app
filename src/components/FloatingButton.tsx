@@ -1,28 +1,29 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { APP_COLORS, FAB_SIZE, RADIUS, SCREEN_PADDING, softShadow } from '../constants';
+
+import type { StyleProp, ViewStyle } from 'react-native';
 
 interface FloatingButtonProps {
   onPress: () => void;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function FloatingButton({ onPress }: FloatingButtonProps) {
+export function FloatingButton({ onPress, style }: FloatingButtonProps) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+      style={({ pressed }) => [styles.fab, style, pressed && styles.fabPressed]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="Add goal"
     >
-      <Text style={styles.plus}>+</Text>
+      <View style={styles.iconH} />
+      <View style={styles.iconV} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   fab: {
-    position: 'absolute',
-    right: SCREEN_PADDING,
-    bottom: SCREEN_PADDING,
     width: FAB_SIZE,
     height: FAB_SIZE,
     borderRadius: RADIUS.lg,
@@ -35,10 +36,18 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.94 }],
     backgroundColor: APP_COLORS.primaryDark,
   },
-  plus: {
-    color: APP_COLORS.fabText,
-    fontSize: 70,
-    fontWeight: '300',
-    textAlign: 'center',
+  iconH: {
+    position: 'absolute',
+    width: 36,
+    height: 4,
+    backgroundColor: APP_COLORS.fabText,
+    borderRadius: 2,
+  },
+  iconV: {
+    position: 'absolute',
+    width: 4,
+    height: 36,
+    backgroundColor: APP_COLORS.fabText,
+    borderRadius: 2,
   },
 });

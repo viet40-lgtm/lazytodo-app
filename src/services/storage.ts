@@ -23,12 +23,17 @@ function normalizeTask(raw: unknown): Task | null {
   if (typeof task.id !== 'string' || typeof task.name !== 'string') return null;
 
   const createdAt = parseTimestamp(task.createdAt) ?? Date.now();
-  const section: TaskSection =
+  let section: TaskSection =
+    task.section === 'daily' ||
     task.section === 'weekly' ||
     task.section === 'monthly' ||
     task.section === 'yearly'
       ? task.section
       : 'today';
+
+  if (task.recurring === 'daily') {
+    section = 'daily';
+  }
   const spentMinutes =
     typeof task.spentMinutes === 'number' && task.spentMinutes >= 0
       ? Math.round(task.spentMinutes)
@@ -55,7 +60,7 @@ function normalizeTask(raw: unknown): Task | null {
   };
 }
 
-function normalizeState(raw: unknown): AppState {
+export function normalizeState(raw: unknown): AppState {
   if (!raw || typeof raw !== 'object') return defaultState();
   const data = raw as Record<string, unknown>;
   const tasks = Array.isArray(data.tasks)

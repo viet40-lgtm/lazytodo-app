@@ -23,10 +23,10 @@ interface TaskItemProps {
   onDelete: (id: string) => void;
   onLogTime: (id: string, minutes: number) => void;
   onMoveSection: (id: string, section: TaskSection) => void;
+  onReorder: (id: string, direction: 'up' | 'down') => void;
 }
 
 function recurringLabel(recurring?: Task['recurring']): string | null {
-  if (recurring === 'daily') return 'Daily';
   if (recurring === 'weekly') return 'Week';
   if (recurring === 'monthly') return 'Month';
   if (recurring === 'yearly') return 'Year';
@@ -48,6 +48,7 @@ function TaskRow({
   onDelete,
   onLogTime,
   onMoveSection,
+  onReorder,
 }: TaskItemProps) {
   const repeat = recurringLabel(task.recurring);
   const done = task.completed;
@@ -60,8 +61,8 @@ function TaskRow({
         <Pressable
           style={[
             styles.checkbox,
-            { borderColor: trackColor },
-            done && { backgroundColor: accentColor, borderColor: accentColor },
+            { borderColor: APP_COLORS.primary },
+            done && { backgroundColor: APP_COLORS.primary, borderColor: APP_COLORS.primary },
           ]}
           onPress={() => onToggle(task.id)}
           accessibilityRole="checkbox"
@@ -92,7 +93,11 @@ function TaskRow({
         </Pressable>
 
         <View style={styles.corner}>
-          <Text style={styles.createdText}>{createdLabel(task.createdAt)}</Text>
+          <View style={styles.sortArrows}>
+            <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => onReorder(task.id, 'up')}>
+              <Text style={styles.arrowText}>↑</Text>
+            </Pressable>
+          </View>
           {Platform.OS === 'web' ? (
             <Pressable
               style={styles.webDelete}
@@ -116,6 +121,9 @@ function TaskRow({
         </Pressable>
         <View style={styles.spentChip}>
           <Text style={styles.spentText}>🕒 {formatDuration(task.spentMinutes)}</Text>
+        </View>
+        <View style={styles.spentChip}>
+          <Text style={styles.createdText}>📅 {createdLabel(task.createdAt)}</Text>
         </View>
         <Text style={styles.moveLabel}>Move:</Text>
         <View style={styles.moveGroup}>
@@ -185,9 +193,9 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   checkbox: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -195,9 +203,31 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: '#ffffff',
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '800',
-    lineHeight: 20,
+    lineHeight: 25,
+    marginTop: -2,
+  },
+  sortArrows: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sortArrowBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: APP_COLORS.delete,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowText: {
+    fontSize: 25,
+    fontWeight: '900',
+    color: APP_COLORS.delete,
+    lineHeight: 25,
+    marginTop: -2,
   },
   titleArea: {
     flex: 1,
@@ -287,19 +317,20 @@ const styles = StyleSheet.create({
     color: APP_COLORS.textSubtle,
   },
   webDelete: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 2,
     borderColor: APP_COLORS.delete,
     alignItems: 'center',
     justifyContent: 'center',
   },
   webDeleteText: {
-    fontSize: 20,
-    lineHeight: 20,
+    fontSize: 25,
+    lineHeight: 25,
     color: APP_COLORS.delete,
     fontWeight: '700',
+    marginTop: -2,
   },
   deleteAction: {
     backgroundColor: APP_COLORS.delete,

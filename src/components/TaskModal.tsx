@@ -21,6 +21,7 @@ import {
   softShadow,
 } from '../constants';
 import type { Recurring, Task, TaskSection } from '../types';
+import { DateTimePickerUI } from './DateTimePickerUI';
 
 interface TaskModalProps {
   visible: boolean;
@@ -61,6 +62,29 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
   }, [visible, task, defaultSection]);
+
+  // Auto-categorize section based on reminder date
+  useEffect(() => {
+    if (!reminder) return;
+    const pickedDate = new Date(reminder);
+    if (isNaN(pickedDate.getTime())) return;
+    
+    const now = new Date();
+    const pickedDay = new Date(pickedDate.getFullYear(), pickedDate.getMonth(), pickedDate.getDate()).getTime();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    
+    const diffDays = (pickedDay - today) / (24 * 60 * 60 * 1000);
+    
+    if (diffDays === 0) {
+      setSection('today');
+    } else if (diffDays > 0 && diffDays <= 7) {
+      setSection('weekly');
+    } else if (diffDays > 7 && diffDays <= 30) {
+      setSection('monthly');
+    } else if (diffDays > 30) {
+      setSection('yearly');
+    }
+  }, [reminder]);
 
   const handleSave = () => {
     const trimmed = name.trim();
@@ -146,15 +170,16 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
               <Text style={styles.label}>
                 Reminder <Text style={styles.optional}>(optional)</Text>
               </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="HH:MM (24h)"
-                placeholderTextColor={APP_COLORS.textSubtle}
-                value={reminder}
-                onChangeText={setReminder}
-                keyboardType="numbers-and-punctuation"
-                maxLength={5}
-              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <DateTimePickerUI value={reminder} onChange={setReminder} />
+                </View>
+                {reminder ? (
+                  <Pressable onPress={() => setReminder('')} style={{ padding: 8 }}>
+                    <Text style={{ color: APP_COLORS.delete, fontSize: 16, fontWeight: '600' }}>Clear</Text>
+                  </Pressable>
+                ) : null}
+              </View>
             </View>
 
             <View style={styles.field}>
@@ -234,7 +259,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '500',
     color: APP_COLORS.headerMuted,
     marginTop: 2,
@@ -249,8 +274,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 18,
-    lineHeight: 20,
+    fontSize: 20,
+    lineHeight: 25,
     fontWeight: '700',
     color: APP_COLORS.headerMuted,
   },
@@ -267,7 +292,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   label: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: APP_COLORS.text,
   },
@@ -276,7 +301,7 @@ const styles = StyleSheet.create({
     color: APP_COLORS.textSubtle,
   },
   input: {
-    fontSize: 20,
+    fontSize: 25,
     borderWidth: 1,
     borderColor: APP_COLORS.border,
     borderRadius: RADIUS.md,
@@ -307,10 +332,10 @@ const styles = StyleSheet.create({
     borderColor: APP_COLORS.primary,
   },
   chipIcon: {
-    fontSize: 20,
+    fontSize: 25,
   },
   chipText: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -343,7 +368,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: APP_COLORS.fabText,
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '700',
   },
   secondaryBtn: {
@@ -355,7 +380,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     color: APP_COLORS.text,
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '600',
   },
 });

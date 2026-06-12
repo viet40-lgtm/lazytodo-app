@@ -11,13 +11,10 @@ Notifications.setNotificationHandler({
   }),
 });
 
-function parseReminder(reminder: string): { hour: number; minute: number } | null {
-  const match = /^(\d{2}):(\d{2})$/.exec(reminder);
-  if (!match) return null;
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  if (hour > 23 || minute > 59) return null;
-  return { hour, minute };
+function parseReminder(reminder: string): Date | null {
+  const d = new Date(reminder);
+  if (isNaN(d.getTime())) return null;
+  return d;
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
@@ -40,8 +37,10 @@ async function cancelTaskReminder(notificationId?: string): Promise<void> {
 async function scheduleTaskReminder(task: Task): Promise<string | undefined> {
   if (!task.reminder || task.completed) return undefined;
 
-  const time = parseReminder(task.reminder);
-  if (!time) return undefined;
+  const date = parseReminder(task.reminder);
+  if (!date) return undefined;
+
+  if (date.getTime() < Date.now()) return undefined;
 
   const id = await Notifications.scheduleNotificationAsync({
     content: {
@@ -49,9 +48,8 @@ async function scheduleTaskReminder(task: Task): Promise<string | undefined> {
       body: task.name,
     },
     trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: time.hour,
-      minute: time.minute,
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date,
     },
   });
 

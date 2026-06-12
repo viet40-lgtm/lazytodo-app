@@ -1,5 +1,6 @@
 import type { AppState } from '../types';
 import { supabase } from './supabase';
+import { normalizeState } from './storage';
 
 const TABLE = 'app_state';
 
@@ -12,7 +13,7 @@ export async function pullRemoteState(userId: string): Promise<AppState | null> 
     .maybeSingle();
 
   if (error || !data?.state) return null;
-  return data.state as AppState;
+  return normalizeState(data.state);
 }
 
 export async function pushRemoteState(userId: string, state: AppState): Promise<boolean> {

@@ -63,12 +63,13 @@ export function softShadow(opacity = 0.08, radius = 12, offsetY = 4) {
 
 export const SECTION_LABELS: Record<TaskSection, string> = {
   today: 'Today',
+  daily: 'Daily',
   weekly: 'Week',
   monthly: 'Month',
   yearly: 'Year',
 };
 
-const ALL_SECTIONS: TaskSection[] = ['today', 'weekly', 'monthly', 'yearly'];
+const ALL_SECTIONS: TaskSection[] = ['daily', 'today', 'weekly', 'monthly', 'yearly'];
 
 export function getMoveTargets(from: TaskSection): TaskSection[] {
   return ALL_SECTIONS.filter((section) => section !== from);
@@ -91,6 +92,14 @@ export const SECTION_THEMES: Record<TaskSection, SectionTheme> = {
     track: '#bbf7d0',
     icon: '☀️',
     tagline: 'Small wins for right now',
+  },
+  daily: {
+    accent: '#0891b2',
+    accentSoft: '#cffafe',
+    surface: '#ffffff',
+    track: '#a5f3fc',
+    icon: '🔄',
+    tagline: 'Things you do every day',
   },
   weekly: {
     accent: '#0284c7',

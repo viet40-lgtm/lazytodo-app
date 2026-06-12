@@ -1,18 +1,13 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { APP_COLORS, RADIUS, SCREEN_PADDING, SPACING, softShadow } from '../constants';
+import { FloatingButton } from './FloatingButton';
 
 interface AppHeaderProps {
   onAccountPress?: () => void;
+  onAddPress?: () => void;
   loggedIn?: boolean;
   syncing?: boolean;
   showAccount?: boolean;
-}
-
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
 }
 
 function todayLabel(): string {
@@ -23,12 +18,12 @@ function todayLabel(): string {
   });
 }
 
-export function AppHeader({ onAccountPress, loggedIn = false, syncing = false, showAccount = true }: AppHeaderProps) {
+export function AppHeader({ onAccountPress, onAddPress, loggedIn = false, syncing = false, showAccount = true }: AppHeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.row}>
         <View style={styles.titleBlock}>
-          <Text style={styles.eyebrow}>{greeting()}</Text>
+          <Text style={styles.eyebrow}>{todayLabel()}</Text>
           <Text style={styles.title}>Lazy To-Do</Text>
         </View>
         <View style={styles.rightCol}>
@@ -46,9 +41,11 @@ export function AppHeader({ onAccountPress, loggedIn = false, syncing = false, s
               )}
             </Pressable>
           ) : null}
-          <View style={styles.dateChip}>
-            <Text style={styles.dateText}>{todayLabel()}</Text>
-          </View>
+          {onAddPress ? (
+            <View>
+              <FloatingButton onPress={onAddPress} />
+            </View>
+          ) : null}
         </View>
       </View>
     </View>

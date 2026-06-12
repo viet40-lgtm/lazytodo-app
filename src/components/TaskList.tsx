@@ -12,6 +12,7 @@ interface TaskListProps {
   onDelete: (id: string) => void;
   onLogTime: (id: string, minutes: number) => void;
   onMoveSection: (id: string, section: TaskSection) => void;
+  onReorder: (id: string, direction: 'up' | 'down') => void;
   emptyText?: string;
 }
 
@@ -24,6 +25,7 @@ export function TaskList({
   onDelete,
   onLogTime,
   onMoveSection,
+  onReorder,
   emptyText = 'Nothing here yet.',
 }: TaskListProps) {
   const theme = getSectionTheme(section);
@@ -58,6 +60,7 @@ export function TaskList({
               onDelete={onDelete}
               onLogTime={onLogTime}
               onMoveSection={onMoveSection}
+              onReorder={onReorder}
             />
           ))}
         </View>

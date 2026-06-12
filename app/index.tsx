@@ -34,10 +34,12 @@ export default function HomeScreen() {
     logTime,
     toggleTask,
     deleteTask,
+    reorderTask,
     markCelebrated,
   } = useTasks(auth.userId);
 
   const todayTasks = useMemo(() => tasks.filter((task) => task.section === 'today'), [tasks]);
+  const dailyTasks = useMemo(() => tasks.filter((task) => task.section === 'daily'), [tasks]);
   const weeklyTasks = useMemo(() => tasks.filter((task) => task.section === 'weekly'), [tasks]);
   const monthlyTasks = useMemo(() => tasks.filter((task) => task.section === 'monthly'), [tasks]);
   const yearlyTasks = useMemo(() => tasks.filter((task) => task.section === 'yearly'), [tasks]);
@@ -96,6 +98,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <AppHeader
         onAccountPress={() => setAuthOpen(true)}
+        onAddPress={() => openAdd('today')}
         loggedIn={Boolean(auth.userId)}
         syncing={syncing}
         showAccount={auth.configured}
@@ -105,7 +108,18 @@ export default function HomeScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Quote text={quote} />
+        <TaskList
+          section="daily"
+          title="Daily"
+          tasks={dailyTasks}
+          onToggle={toggleTask}
+          onEdit={openEdit}
+          onDelete={deleteTask}
+          onLogTime={logTime}
+          onMoveSection={moveGoal}
+          onReorder={reorderTask}
+          emptyText="Things you do every day."
+        />
         <TaskList
           section="today"
           title="Today"
@@ -115,6 +129,7 @@ export default function HomeScreen() {
           onDelete={deleteTask}
           onLogTime={logTime}
           onMoveSection={moveGoal}
+          onReorder={reorderTask}
           emptyText="No goals yet. Tap + when you're ready."
         />
         <TaskList
@@ -126,6 +141,7 @@ export default function HomeScreen() {
           onDelete={deleteTask}
           onLogTime={logTime}
           onMoveSection={moveGoal}
+          onReorder={reorderTask}
           emptyText="Bigger stuff for this week."
         />
         <TaskList
@@ -137,6 +153,7 @@ export default function HomeScreen() {
           onDelete={deleteTask}
           onLogTime={logTime}
           onMoveSection={moveGoal}
+          onReorder={reorderTask}
           emptyText="Goals for this month."
         />
         <TaskList
@@ -148,12 +165,12 @@ export default function HomeScreen() {
           onDelete={deleteTask}
           onLogTime={logTime}
           onMoveSection={moveGoal}
+          onReorder={reorderTask}
           emptyText="Long-term goals. No rush."
         />
+        <Quote text={quote} />
         <CompletionCelebration show={allDone} />
       </ScrollView>
-
-      <FloatingButton onPress={() => openAdd('today')} />
       <TaskModal
         visible={modalOpen}
         task={editingTask}
