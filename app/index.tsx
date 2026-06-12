@@ -90,10 +90,6 @@ export default function HomeScreen() {
     );
   }
 
-  const moveGoal = (id: string, section: TaskSection) => {
-    updateTask(id, { section });
-  };
-
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <AppHeader
@@ -116,7 +112,6 @@ export default function HomeScreen() {
           onEdit={openEdit}
           onDelete={deleteTask}
           onLogTime={logTime}
-          onMoveSection={moveGoal}
           onReorder={reorderTask}
           emptyText="Things you do every day."
         />
@@ -128,7 +123,6 @@ export default function HomeScreen() {
           onEdit={openEdit}
           onDelete={deleteTask}
           onLogTime={logTime}
-          onMoveSection={moveGoal}
           onReorder={reorderTask}
           emptyText="No goals yet. Tap + when you're ready."
         />
@@ -140,7 +134,6 @@ export default function HomeScreen() {
           onEdit={openEdit}
           onDelete={deleteTask}
           onLogTime={logTime}
-          onMoveSection={moveGoal}
           onReorder={reorderTask}
           emptyText="Bigger stuff for this week."
         />
@@ -152,7 +145,6 @@ export default function HomeScreen() {
           onEdit={openEdit}
           onDelete={deleteTask}
           onLogTime={logTime}
-          onMoveSection={moveGoal}
           onReorder={reorderTask}
           emptyText="Goals for this month."
         />
@@ -164,7 +156,6 @@ export default function HomeScreen() {
           onEdit={openEdit}
           onDelete={deleteTask}
           onLogTime={logTime}
-          onMoveSection={moveGoal}
           onReorder={reorderTask}
           emptyText="Long-term goals. No rush."
         />

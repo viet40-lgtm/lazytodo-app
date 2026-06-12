@@ -11,7 +11,6 @@ interface TaskListProps {
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onLogTime: (id: string, minutes: number) => void;
-  onMoveSection: (id: string, section: TaskSection) => void;
   onReorder: (id: string, direction: 'up' | 'down') => void;
   emptyText?: string;
 }
@@ -24,7 +23,6 @@ export function TaskList({
   onEdit,
   onDelete,
   onLogTime,
-  onMoveSection,
   onReorder,
   emptyText = 'Nothing here yet.',
 }: TaskListProps) {
@@ -59,7 +57,6 @@ export function TaskList({
               onEdit={onEdit}
               onDelete={onDelete}
               onLogTime={onLogTime}
-              onMoveSection={onMoveSection}
               onReorder={onReorder}
             />
           ))}

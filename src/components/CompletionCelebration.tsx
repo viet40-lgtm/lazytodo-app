@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     ...softShadow(0.08, 12, 4),
   },
   emoji: {
-    fontSize: 36,
+    fontSize: 25,
   },
   message: {
     fontSize: 25,
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   subtext: {
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: '500',
     color: APP_COLORS.textMuted,
     textAlign: 'center',

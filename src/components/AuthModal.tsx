@@ -245,23 +245,23 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: '500',
     color: APP_COLORS.headerMuted,
     marginTop: 2,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: APP_COLORS.headerMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 18,
-    lineHeight: 20,
+    fontSize: 25,
+    lineHeight: 25,
     fontWeight: '700',
     color: APP_COLORS.headerMuted,
   },
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     ...softShadow(0.06, 6, 2),
   },
   segmentText: {
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -303,17 +303,17 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   label: {
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.text,
   },
   email: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.primaryDark,
   },
   input: {
-    fontSize: 20,
+    fontSize: 25,
     borderWidth: 1,
     borderColor: APP_COLORS.border,
     borderRadius: RADIUS.md,
@@ -324,12 +324,12 @@ const styles = StyleSheet.create({
     ...softShadow(0.04, 6, 2),
   },
   error: {
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.delete,
   },
   info: {
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.primaryDark,
   },
@@ -340,8 +340,8 @@ const styles = StyleSheet.create({
     ...softShadow(0.04, 6, 2),
   },
   noticeText: {
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 25,
+    lineHeight: 32,
     color: APP_COLORS.textMuted,
   },
   primaryBtn: {
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: APP_COLORS.fabText,
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '700',
   },
 });

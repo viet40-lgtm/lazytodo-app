@@ -22,7 +22,6 @@ interface TaskItemProps {
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onLogTime: (id: string, minutes: number) => void;
-  onMoveSection: (id: string, section: TaskSection) => void;
   onReorder: (id: string, direction: 'up' | 'down') => void;
 }
 
@@ -47,12 +46,10 @@ function TaskRow({
   onEdit,
   onDelete,
   onLogTime,
-  onMoveSection,
   onReorder,
 }: TaskItemProps) {
   const repeat = recurringLabel(task.recurring);
   const done = task.completed;
-  const moveTargets = getMoveTargets(task.section);
   const hasMeta = Boolean(task.reminder || repeat);
 
   return (
@@ -76,20 +73,6 @@ function TaskRow({
           <Text style={[styles.name, done && styles.nameDone]} numberOfLines={3}>
             {task.name}
           </Text>
-          {hasMeta ? (
-            <View style={styles.metaRow}>
-              {task.reminder ? (
-                <View style={styles.metaChip}>
-                  <Text style={styles.metaText}>⏰ {task.reminder}</Text>
-                </View>
-              ) : null}
-              {repeat ? (
-                <View style={styles.metaChip}>
-                  <Text style={styles.metaText}>↻ {repeat}</Text>
-                </View>
-              ) : null}
-            </View>
-          ) : null}
         </Pressable>
 
         <View style={styles.corner}>
@@ -111,38 +94,44 @@ function TaskRow({
         </View>
       </View>
 
-      <View style={styles.actionRow}>
-        <Pressable
-          style={[styles.timeBtn, { backgroundColor: accentSoft }]}
-          onPress={() => onLogTime(task.id, 15)}
-          hitSlop={4}
-        >
-          <Text style={[styles.timeBtnText, { color: accentColor }]}>+15m</Text>
+      {hasMeta ? (
+        <Pressable style={styles.metaRow} onPress={() => onEdit(task)}>
+          <View>
+            {task.reminder ? (
+              <View style={styles.metaChip}>
+                <Text style={styles.metaText}>⏰ {task.reminder}</Text>
+              </View>
+            ) : null}
+          </View>
+          <View>
+            {repeat ? (
+              <View style={styles.metaChip}>
+                <Text style={styles.metaText}>↻ {repeat}</Text>
+              </View>
+            ) : null}
+          </View>
         </Pressable>
-        <View style={styles.spentChip}>
-          <Text style={styles.spentText}>🕒 {formatDuration(task.spentMinutes)}</Text>
+      ) : null}
+
+      <View style={styles.actionRow}>
+        <View style={{ flex: 1, alignItems: 'flex-start' }}>
+          <Pressable
+            style={[styles.timeBtn, { backgroundColor: accentSoft }]}
+            onPress={() => onLogTime(task.id, 15)}
+            hitSlop={4}
+          >
+            <Text style={[styles.timeBtnText, { color: accentColor }]}>+15m</Text>
+          </Pressable>
         </View>
-        <View style={styles.spentChip}>
-          <Text style={styles.createdText}>📅 {createdLabel(task.createdAt)}</Text>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <View style={styles.spentChip}>
+            <Text style={styles.spentText}>🕒 {formatDuration(task.spentMinutes)}</Text>
+          </View>
         </View>
-        <Text style={styles.moveLabel}>Move:</Text>
-        <View style={styles.moveGroup}>
-          {moveTargets.map((target) => {
-            const targetTheme = SECTION_THEMES[target];
-            return (
-              <Pressable
-                key={target}
-                style={styles.moveBtn}
-                onPress={() => onMoveSection(task.id, target)}
-                hitSlop={4}
-                accessibilityLabel={`Move to ${SECTION_LABELS[target]}`}
-              >
-                <Text style={[styles.moveText, { color: targetTheme.accent }]} numberOfLines={1}>
-                  {targetTheme.icon}
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View style={{ flex: 1, alignItems: 'flex-end' }}>
+          <View style={styles.spentChip}>
+            <Text style={styles.createdText}>📅 {createdLabel(task.createdAt)}</Text>
+          </View>
         </View>
       </View>
     </View>
@@ -247,8 +236,9 @@ const styles = StyleSheet.create({
   },
   metaRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: SPACING.sm,
   },
   metaChip: {
     backgroundColor: APP_COLORS.surfaceMuted,
@@ -257,15 +247,15 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   metaText: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
+    justifyContent: 'space-between',
+    paddingTop: SPACING.sm,
   },
   timeBtn: {
     borderRadius: RADIUS.pill,
@@ -273,37 +263,16 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   timeBtnText: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '800',
   },
   spentChip: {
     paddingVertical: SPACING.sm,
   },
   spentText: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
-  },
-  moveLabel: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: APP_COLORS.textMuted,
-    marginLeft: 'auto',
-  },
-  moveGroup: {
-    flexDirection: 'row',
-    gap: SPACING.xs,
-  },
-  moveBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: RADIUS.sm,
-    backgroundColor: APP_COLORS.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  moveText: {
-    fontSize: 20,
   },
   corner: {
     flexDirection: 'row',
@@ -312,7 +281,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   createdText: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
   },
