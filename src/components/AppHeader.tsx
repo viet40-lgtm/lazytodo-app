@@ -22,29 +22,29 @@ export function AppHeader({ onAccountPress, onAddPress, loggedIn = false, syncin
   return (
     <View style={styles.container}>
       <View style={styles.row}>
-        <View style={styles.titleBlock}>
-          <Text style={styles.eyebrow}>{todayLabel()}</Text>
-          <Text style={styles.title}>Lazy To-Do</Text>
+        <View style={styles.leftCol}>
+          <Text style={styles.urlText}>LazyToDo.app</Text>
+          <View style={styles.dateRow}>
+            {showAccount ? (
+              <Pressable
+                style={styles.accountBtn}
+                onPress={onAccountPress}
+                accessibilityRole="button"
+                accessibilityLabel={loggedIn ? 'Account' : 'Sign in'}
+              >
+                {syncing ? (
+                  <ActivityIndicator size="small" color={APP_COLORS.headerAccent} />
+                ) : (
+                  <Text style={styles.accountText}>{loggedIn ? '☁ Synced' : '☁ Sign in'}</Text>
+                )}
+              </Pressable>
+            ) : null}
+            <Text style={styles.eyebrow}>{todayLabel()}</Text>
+          </View>
         </View>
         <View style={styles.rightCol}>
-          {showAccount ? (
-            <Pressable
-              style={styles.accountBtn}
-              onPress={onAccountPress}
-              accessibilityRole="button"
-              accessibilityLabel={loggedIn ? 'Account' : 'Sign in'}
-            >
-              {syncing ? (
-                <ActivityIndicator size="small" color={APP_COLORS.headerAccent} />
-              ) : (
-                <Text style={styles.accountText}>{loggedIn ? '☁ Synced' : '☁ Sign in'}</Text>
-              )}
-            </Pressable>
-          ) : null}
           {onAddPress ? (
-            <View>
-              <FloatingButton onPress={onAddPress} />
-            </View>
+            <FloatingButton onPress={onAddPress} />
           ) : null}
         </View>
       </View>
@@ -64,13 +64,24 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: SPACING.md,
   },
-  titleBlock: {
+  leftCol: {
     flex: 1,
-    minWidth: 0,
+    gap: SPACING.xs,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  urlText: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   eyebrow: {
     fontSize: 20,
@@ -86,8 +97,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   rightCol: {
-    alignItems: 'flex-end',
-    gap: SPACING.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   accountBtn: {
     backgroundColor: 'rgba(134, 239, 172, 0.15)',

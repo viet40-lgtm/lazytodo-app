@@ -150,8 +150,12 @@ export function useTasks(userId: string | null = null) {
   }, [updateTasks]);
 
   const toggleTask = useCallback((id: string) => {
-    updateTasks((tasks) =>
-      tasks.map((task) =>
+    updateTasks((tasks) => {
+      const target = tasks.find((t) => t.id === id);
+      if (!target) return tasks;
+
+      const isCompleting = !target.completed;
+      const newTasks = tasks.map((task) =>
         task.id === id
           ? {
               ...task,
@@ -159,8 +163,37 @@ export function useTasks(userId: string | null = null) {
               completedAt: !task.completed ? Date.now() : undefined,
             }
           : task,
-      ),
-    );
+      );
+
+      // Spawn a new recurring task when completed
+      if (isCompleting && target.recurring) {
+        let newReminder = target.reminder;
+        if (newReminder) {
+          const date = new Date(newReminder);
+          if (!isNaN(date.getTime())) {
+            if (target.recurring === 'daily') date.setDate(date.getDate() + 1);
+            else if (target.recurring === 'weekly') date.setDate(date.getDate() + 7);
+            else if (target.recurring === 'monthly') date.setMonth(date.getMonth() + 1);
+            else if (target.recurring === 'yearly') date.setFullYear(date.getFullYear() + 1);
+            
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            newReminder = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+          }
+        }
+
+        newTasks.push({
+          ...target,
+          id: createTaskId(),
+          completed: false,
+          completedAt: undefined,
+          createdAt: Date.now(),
+          spentMinutes: 0,
+          reminder: newReminder,
+        });
+      }
+
+      return newTasks;
+    });
   }, [updateTasks]);
 
   const deleteTask = useCallback((id: string) => {

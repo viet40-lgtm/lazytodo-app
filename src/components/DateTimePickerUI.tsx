@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   },
   cellSelected: {
     backgroundColor: APP_COLORS.primary,
-    borderRadius: RADIUS.full,
+    borderRadius: RADIUS.pill,
   },
   cellText: {
     fontSize: 20,
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   ampmBtn: {
-    backgroundColor: APP_COLORS.primaryLight,
+    backgroundColor: APP_COLORS.secondaryBtn,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     borderRadius: RADIUS.md,

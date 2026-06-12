@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../src/components/AppHeader';
 import { AuthModal } from '../src/components/AuthModal';
+import { CompletedModal } from '../src/components/CompletedModal';
 import { CompletionCelebration } from '../src/components/CompletionCelebration';
 import { FloatingButton } from '../src/components/FloatingButton';
 import { Quote } from '../src/components/Quote';
 import { TaskList } from '../src/components/TaskList';
 import { TaskModal } from '../src/components/TaskModal';
-import { APP_COLORS, FAB_SIZE, SCREEN_PADDING } from '../src/constants';
+import { APP_COLORS, FAB_SIZE, RADIUS, SCREEN_PADDING, SPACING } from '../src/constants';
 import { getRandomQuote } from '../src/data/quotes';
 import { useAuth } from '../src/hooks/useAuth';
 import { useTasks } from '../src/hooks/useTasks';
@@ -18,6 +19,7 @@ export default function HomeScreen() {
   const [quote] = useState(getRandomQuote);
   const [modalOpen, setModalOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [completedOpen, setCompletedOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [defaultSection, setDefaultSection] = useState<TaskSection>('today');
 
@@ -38,11 +40,11 @@ export default function HomeScreen() {
     markCelebrated,
   } = useTasks(auth.userId);
 
-  const todayTasks = useMemo(() => tasks.filter((task) => task.section === 'today'), [tasks]);
-  const dailyTasks = useMemo(() => tasks.filter((task) => task.section === 'daily'), [tasks]);
-  const weeklyTasks = useMemo(() => tasks.filter((task) => task.section === 'weekly'), [tasks]);
-  const monthlyTasks = useMemo(() => tasks.filter((task) => task.section === 'monthly'), [tasks]);
-  const yearlyTasks = useMemo(() => tasks.filter((task) => task.section === 'yearly'), [tasks]);
+  const todayTasks = useMemo(() => tasks.filter((task) => task.section === 'today' && !task.completed), [tasks]);
+  const dailyTasks = useMemo(() => tasks.filter((task) => task.section === 'daily' && !task.completed), [tasks]);
+  const weeklyTasks = useMemo(() => tasks.filter((task) => task.section === 'weekly' && !task.completed), [tasks]);
+  const monthlyTasks = useMemo(() => tasks.filter((task) => task.section === 'monthly' && !task.completed), [tasks]);
+  const yearlyTasks = useMemo(() => tasks.filter((task) => task.section === 'yearly' && !task.completed), [tasks]);
 
   useEffect(() => {
     if (allDone && !celebratedToday) {
@@ -160,6 +162,9 @@ export default function HomeScreen() {
           emptyText="Long-term goals. No rush."
         />
         <Quote text={quote} />
+        <Pressable style={styles.completedBtn} onPress={() => setCompletedOpen(true)}>
+          <Text style={styles.completedBtnText}>View Completed</Text>
+        </Pressable>
         <CompletionCelebration show={allDone} />
       </ScrollView>
       <TaskModal
@@ -170,13 +175,20 @@ export default function HomeScreen() {
         onClose={closeModal}
       />
       <AuthModal
-        visible={authOpen}
+        visible={authOpen || (auth.configured && !auth.userId)}
+        cancellable={Boolean(auth.userId)}
         configured={auth.configured}
         email={auth.email}
         onSignIn={auth.signIn}
         onSignUp={auth.signUp}
         onSignOut={auth.signOut}
         onClose={() => setAuthOpen(false)}
+      />
+      <CompletedModal
+        visible={completedOpen}
+        tasks={tasks}
+        onClose={() => setCompletedOpen(false)}
+        onDelete={deleteTask}
       />
     </SafeAreaView>
   );
@@ -198,5 +210,18 @@ const styles = StyleSheet.create({
     paddingBottom: SCREEN_PADDING + FAB_SIZE + SCREEN_PADDING,
     gap: 24,
     width: '100%',
+  },
+  completedBtn: {
+    backgroundColor: APP_COLORS.primary,
+    borderRadius: RADIUS.md,
+    paddingVertical: SPACING.lg,
+    alignItems: 'center',
+    marginTop: SPACING.md,
+    borderWidth: 0,
+  },
+  completedBtnText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

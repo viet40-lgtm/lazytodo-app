@@ -23,6 +23,7 @@ interface AuthModalProps {
   onSignUp: (email: string, password: string) => Promise<AuthResult>;
   onSignOut: () => Promise<void>;
   onClose: () => void;
+  cancellable?: boolean;
 }
 
 type Mode = 'signin' | 'signup';
@@ -35,6 +36,7 @@ export function AuthModal({
   onSignUp,
   onSignOut,
   onClose,
+  cancellable = true,
 }: AuthModalProps) {
   const [mode, setMode] = useState<Mode>('signin');
   const [emailValue, setEmailValue] = useState('');
@@ -101,14 +103,17 @@ export function AuthModal({
           style={styles.keyboard}
         >
           <View style={styles.header}>
+            <Text style={styles.urlText}>LazyToDo.app</Text>
             <View style={styles.headerRow}>
-              <Text style={styles.title}>{loggedIn ? 'Account' : 'Sync your goals'}</Text>
-              <Pressable style={styles.closeBtn} onPress={onClose} accessibilityLabel="Close" hitSlop={8}>
-                <Text style={styles.closeText}>X</Text>
-              </Pressable>
+              <Text style={styles.title}>{loggedIn ? 'Account' : ''}</Text>
+              {cancellable ? (
+                <Pressable style={styles.closeBtn} onPress={onClose} accessibilityLabel="Close" hitSlop={8}>
+                  <Text style={styles.closeText}>X</Text>
+                </Pressable>
+              ) : null}
             </View>
             <Text style={styles.subtitle}>
-              {loggedIn ? 'Your goals sync across devices.' : 'Sign in to use your goals on any device.'}
+              {loggedIn ? 'Your goals sync across devices.' : 'Please sign in or create an account to continue.'}
             </Text>
           </View>
 
@@ -231,6 +236,14 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: RADIUS.xl,
     borderBottomRightRadius: RADIUS.xl,
     ...softShadow(0.18, 16, 6),
+  },
+  urlText: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+    textAlign: 'left',
   },
   headerRow: {
     flexDirection: 'row',

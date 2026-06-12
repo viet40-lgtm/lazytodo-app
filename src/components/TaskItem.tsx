@@ -32,6 +32,18 @@ function recurringLabel(recurring?: Task['recurring']): string | null {
   return null;
 }
 
+function formatReminder(reminder: string): string {
+  if (!reminder) return '';
+  const parts = reminder.split('T');
+  if (parts.length === 2) {
+    const dateParts = parts[0].split('-');
+    if (dateParts.length === 3) {
+      return `${dateParts[1]}-${dateParts[2]} @ ${parts[1]}`;
+    }
+  }
+  return reminder.replace('T', ' @ ');
+}
+
 function createdLabel(createdAt: number): string {
   const date = new Date(createdAt);
   return `${date.getMonth() + 1}/${date.getDate()}`;
@@ -99,7 +111,7 @@ function TaskRow({
           <View>
             {task.reminder ? (
               <View style={styles.metaChip}>
-                <Text style={styles.metaText}>⏰ {task.reminder}</Text>
+                <Text style={styles.metaText}>⏰ {formatReminder(task.reminder)}</Text>
               </View>
             ) : null}
           </View>
