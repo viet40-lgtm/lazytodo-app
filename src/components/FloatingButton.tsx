@@ -37,9 +37,10 @@ const styles = StyleSheet.create({
   },
   plus: {
     color: APP_COLORS.fabText,
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 70,
+    lineHeight: 70,
     fontWeight: '300',
-    marginTop: -2,
+    textAlign: 'center',
+    marginTop: -14,
   },
 });
