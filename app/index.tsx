@@ -42,6 +42,7 @@ export default function HomeScreen() {
     reorderTask,
     markCelebrated,
     loadFromBackup,
+    forceSync,
     isCorrupted,
   } = useTasks(auth.userId);
 
@@ -135,7 +136,10 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <AppHeader
-        onAccountPress={() => setAuthOpen(true)}
+        onAccountPress={() => {
+          if (auth.userId) forceSync();
+          setAuthOpen(true);
+        }}
         onAddPress={() => openAdd('today')}
         loggedIn={Boolean(auth.userId)}
         syncing={syncing}

@@ -138,6 +138,24 @@ export function useTasks(userId: string | null = null) {
     });
   }, []);
 
+  // Manual force sync
+  const forceSync = useCallback(async () => {
+    if (!userId || !state || isCorrupted) return;
+    setSyncing(true);
+    try {
+      const remoteState = await pullRemoteState(userId);
+      if (remoteState && remoteState.savedAt > state.savedAt) {
+        setState(remoteState);
+      } else {
+        await pushRemoteState(userId, state);
+      }
+    } catch (err) {
+      console.error('Force sync failed:', err);
+    } finally {
+      setSyncing(false);
+    }
+  }, [userId, state, isCorrupted]);
+
   const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt' | 'completed' | 'spentMinutes'>) => {
     const newTask: Task = {
       ...task,
@@ -322,6 +340,7 @@ export function useTasks(userId: string | null = null) {
     reorderTask,
     markCelebrated,
     loadFromBackup,
+    forceSync,
     isCorrupted,
   };
 }
