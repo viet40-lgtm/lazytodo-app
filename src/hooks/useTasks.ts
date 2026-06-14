@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppState, Task, TaskSection } from '../types';
 import { pullRemoteState, pushRemoteState } from '../services/cloud';
 import { syncReminders } from '../services/reminders';
-import { loadState, saveState, DataCorruptionError } from '../services/storage';
+import { loadState, saveState, DataCorruptionError, mergeStates } from '../services/storage';
 import { isGoalComplete } from '../utils/progress';
 import { nextPeriodStart, advanceReminder, isTaskOverdue } from '../utils/recurring';
 
@@ -81,8 +81,14 @@ export function useTasks(userId: string | null = null) {
       const remote = await pullRemoteState(userId);
       const local = stateRef.current;
       if (!active) return;
-      if (remote && (!local || (remote.savedAt ?? 0) > (local.savedAt ?? 0))) {
-        setState(remote);
+      if (remote) {
+        if (!local) {
+          setState(remote);
+        } else {
+          const { merged, localChanged, remoteChanged } = mergeStates(local, remote);
+          if (localChanged) setState(merged);
+          if (remoteChanged) await pushRemoteState(userId, merged);
+        }
       } else if (local) {
         await pushRemoteState(userId, local);
       }
@@ -93,17 +99,37 @@ export function useTasks(userId: string | null = null) {
     };
   }, [hydrated, userId]);
 
-  // Debounced push to cloud on every change while logged in.
+  // Manual force sync
+  const forceSync = useCallback(async () => {
+    if (!userId || !state || isCorrupted) return;
+    setSyncing(true);
+    try {
+      const remoteState = await pullRemoteState(userId);
+      if (remoteState) {
+        const { merged, localChanged, remoteChanged } = mergeStates(state, remoteState);
+        if (localChanged) setState(merged);
+        if (remoteChanged) await pushRemoteState(userId, merged);
+      } else {
+        await pushRemoteState(userId, state);
+      }
+    } catch (err) {
+      console.error('Force sync failed:', err);
+    } finally {
+      setSyncing(false);
+    }
+  }, [userId, state, isCorrupted]);
+
+  // Debounced smart merge on every change while logged in.
   useEffect(() => {
     if (!hydrated || !userId || !state || isCorrupted) return;
     if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
     pushTimerRef.current = setTimeout(() => {
-      pushRemoteState(userId, state).catch(() => {});
+      forceSync().catch(() => {});
     }, 1200);
     return () => {
       if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
     };
-  }, [state, hydrated, userId]);
+  }, [state, hydrated, userId, isCorrupted, forceSync]);
 
   const reminderSignature = state?.tasks
     .map((task) => `${task.id}:${task.name}:${task.reminder ?? ''}:${task.completed ? 1 : 0}`)
@@ -138,23 +164,6 @@ export function useTasks(userId: string | null = null) {
     });
   }, []);
 
-  // Manual force sync
-  const forceSync = useCallback(async () => {
-    if (!userId || !state || isCorrupted) return;
-    setSyncing(true);
-    try {
-      const remoteState = await pullRemoteState(userId);
-      if (remoteState && remoteState.savedAt > state.savedAt) {
-        setState(remoteState);
-      } else {
-        await pushRemoteState(userId, state);
-      }
-    } catch (err) {
-      console.error('Force sync failed:', err);
-    } finally {
-      setSyncing(false);
-    }
-  }, [userId, state, isCorrupted]);
 
   const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt' | 'completed' | 'spentMinutes'>) => {
     const newTask: Task = {
@@ -163,20 +172,21 @@ export function useTasks(userId: string | null = null) {
       spentMinutes: 0,
       id: createTaskId(),
       createdAt: Date.now(),
+      updatedAt: Date.now(),
       completed: false,
     };
     updateTasks((tasks) => [...tasks, newTask]);
   }, [updateTasks]);
 
   const updateTask = useCallback((id: string, updates: Partial<Task>) => {
-    updateTasks((tasks) => tasks.map((task) => (task.id === id ? { ...task, ...updates } : task)));
+    updateTasks((tasks) => tasks.map((task) => (task.id === id ? { ...task, ...updates, updatedAt: Date.now() } : task)));
   }, [updateTasks]);
 
   const logTime = useCallback((id: string, minutes: number) => {
     updateTasks((tasks) =>
       tasks.map((task) =>
         task.id === id
-          ? { ...task, spentMinutes: Math.max(0, task.spentMinutes + minutes) }
+          ? { ...task, spentMinutes: Math.max(0, task.spentMinutes + minutes), updatedAt: Date.now() }
           : task,
       ),
     );
@@ -194,6 +204,7 @@ export function useTasks(userId: string | null = null) {
               ...task,
               completed: !task.completed,
               completedAt: !task.completed ? Date.now() : undefined,
+              updatedAt: Date.now(),
             }
           : task,
       );
@@ -225,7 +236,7 @@ export function useTasks(userId: string | null = null) {
   }, [updateTasks]);
 
   const deleteTask = useCallback((id: string) => {
-    updateTasks((tasks) => tasks.map((task) => task.id === id ? { ...task, deleted: true } : task));
+    updateTasks((tasks) => tasks.map((task) => task.id === id ? { ...task, deleted: true, updatedAt: Date.now() } : task));
   }, [updateTasks]);
 
   const skipTask = useCallback((id: string) => {
@@ -233,7 +244,7 @@ export function useTasks(userId: string | null = null) {
       const target = tasks.find((t) => t.id === id);
       if (!target) return tasks;
 
-      const remaining = tasks.map((t) => t.id === id ? { ...t, deleted: true } : t);
+      const remaining = tasks.map((t) => t.id === id ? { ...t, deleted: true, updatedAt: Date.now() } : t);
 
       if (target.recurring) {
         const alreadyQueued = tasks.some(
@@ -278,8 +289,7 @@ export function useTasks(userId: string | null = null) {
           let newOrder = sIdx * 1000;
           if (sIdx === siblingIdx) newOrder = swapIdx * 1000;
           if (sIdx === swapIdx) newOrder = siblingIdx * 1000;
-          
-          return { ...t, order: newOrder };
+          return { ...t, order: newOrder, updatedAt: Date.now() };
         });
       } else if (direction === 'down' && siblingIdx < siblingTasks.length - 1) {
         const swapIdx = siblingIdx + 1;
@@ -291,8 +301,7 @@ export function useTasks(userId: string | null = null) {
           let newOrder = sIdx * 1000;
           if (sIdx === siblingIdx) newOrder = swapIdx * 1000;
           if (sIdx === swapIdx) newOrder = siblingIdx * 1000;
-          
-          return { ...t, order: newOrder };
+          return { ...t, order: newOrder, updatedAt: Date.now() };
         });
       }
       return tasks;

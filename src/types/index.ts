@@ -13,6 +13,7 @@ export interface Task {
   recurring?: Recurring;
   notificationId?: string;
   createdAt: number;
+  updatedAt?: number;
   order?: number;
   deleted?: boolean;
 }

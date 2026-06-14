@@ -67,6 +67,7 @@ function normalizeTask(raw: unknown): Task | null {
     ...(parseTimestamp(task.showAfter) !== undefined ? { showAfter: parseTimestamp(task.showAfter) } : {}),
     ...(typeof task.order === 'number' ? { order: task.order } : {}),
     ...(task.deleted === true ? { deleted: true } : {}),
+    ...(parseTimestamp(task.updatedAt) !== undefined ? { updatedAt: parseTimestamp(task.updatedAt) } : {}),
     createdAt,
   };
 }
@@ -142,4 +143,63 @@ export async function saveState(state: AppState): Promise<void> {
     savedAt: Date.now(),
   };
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+}
+
+/** Merges remote and local state safely using Item-Level timestamps */
+export function mergeStates(local: AppState, remote: AppState): { merged: AppState, localChanged: boolean, remoteChanged: boolean } {
+  const mergedTasks = new Map<string, Task>();
+  let localChanged = false;
+  let remoteChanged = false;
+
+  const localMap = new Map(local.tasks.map(t => [t.id, t]));
+  const remoteMap = new Map(remote.tasks.map(t => [t.id, t]));
+
+  console.log(`[SmartMerge] Local tasks: ${localMap.size}, Remote tasks: ${remoteMap.size}`);
+
+  // 1. Process all remote tasks
+  for (const [id, rTask] of remoteMap) {
+    const lTask = localMap.get(id);
+    if (!lTask) {
+      // Exists only remotely -> we want it
+      mergedTasks.set(id, rTask);
+      localChanged = true;
+      console.log(`[SmartMerge] Added remote-only task: ${rTask.name}`);
+    } else {
+      // Exists in both -> resolve conflict
+      const rTime = rTask.updatedAt || rTask.createdAt;
+      const lTime = lTask.updatedAt || lTask.createdAt;
+
+      if (rTime > lTime) {
+        mergedTasks.set(id, rTask);
+        localChanged = true;
+        console.log(`[SmartMerge] Remote task newer: ${rTask.name}`);
+      } else if (lTime > rTime) {
+        mergedTasks.set(id, lTask);
+        remoteChanged = true;
+        console.log(`[SmartMerge] Local task newer: ${lTask.name}`);
+      } else {
+        // Equal timestamps, just stick with local
+        mergedTasks.set(id, lTask);
+      }
+    }
+  }
+
+  // 2. Add remaining local tasks that don't exist on remote
+  for (const [id, lTask] of localMap) {
+    if (!remoteMap.has(id)) {
+      mergedTasks.set(id, lTask);
+      remoteChanged = true;
+      console.log(`[SmartMerge] Added local-only task: ${lTask.name}`);
+    }
+  }
+
+  console.log(`[SmartMerge] Finished. Local changed? ${localChanged}, Remote changed? ${remoteChanged}. Total merged tasks: ${mergedTasks.size}`);
+
+  const merged: AppState = {
+    tasks: Array.from(mergedTasks.values()),
+    savedAt: Date.now(),
+    lastCelebrationDate: local.savedAt > remote.savedAt ? local.lastCelebrationDate : remote.lastCelebrationDate,
+  };
+
+  return { merged, localChanged, remoteChanged };
 }
