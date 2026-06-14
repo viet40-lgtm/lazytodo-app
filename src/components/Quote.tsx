@@ -24,11 +24,11 @@ const styles = StyleSheet.create({
     ...softShadow(0.06, 10, 3),
   },
   mark: {
-    fontSize: 44,
-    lineHeight: 44,
+    fontSize: 30,
+    lineHeight: 30,
     fontWeight: '800',
     color: APP_COLORS.accentSoft,
-    marginBottom: -16,
+    marginBottom: -8,
   },
   text: {
     fontSize: 25,

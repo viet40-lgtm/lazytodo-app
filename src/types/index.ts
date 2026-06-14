@@ -1,4 +1,4 @@
-export type Recurring = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type Recurring = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly';
 export type TaskSection = 'today' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface Task {
@@ -8,11 +8,13 @@ export interface Task {
   spentMinutes: number;
   completed: boolean;
   completedAt?: number;
+  showAfter?: number;
   reminder?: string;
   recurring?: Recurring;
   notificationId?: string;
   createdAt: number;
   order?: number;
+  deleted?: boolean;
 }
 
 export interface AppState {

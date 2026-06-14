@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_COLORS, RADIUS, SCREEN_PADDING, SPACING } from '../constants';
@@ -15,10 +15,10 @@ export function CompletedModal({ visible, tasks, onClose, onDelete }: CompletedM
   const [limit, setLimit] = useState(20);
 
   // Filter and sort completed tasks by newest first
-  const completedTasks = tasks
-    .filter((t) => t.completed)
-    .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
-
+  const completedTasks = useMemo(
+    () => tasks.filter((t) => t.completed && !t.deleted).sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)),
+    [tasks]
+  );
   const displayedTasks = completedTasks.slice(0, limit);
   const hasMore = limit < completedTasks.length;
 

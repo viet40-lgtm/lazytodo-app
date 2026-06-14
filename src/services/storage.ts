@@ -1,7 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LEGACY_WEB_STORAGE_KEY, STORAGE_KEY } from '../constants';
 import type { AppState, Task, TaskSection } from '../types';
-import { resetRecurringTasks } from '../utils/recurring';
+
+
+export class DataCorruptionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DataCorruptionError';
+  }
+}
 
 const defaultState = (): AppState => ({
   tasks: [],
@@ -51,11 +58,15 @@ function normalizeTask(raw: unknown): Task | null {
     ...(typeof task.reminder === 'string' && task.reminder ? { reminder: task.reminder } : {}),
     ...(task.recurring === 'daily' ||
     task.recurring === 'weekly' ||
+    task.recurring === 'biweekly' ||
     task.recurring === 'monthly' ||
     task.recurring === 'yearly'
       ? { recurring: task.recurring }
       : {}),
     ...(typeof task.notificationId === 'string' ? { notificationId: task.notificationId } : {}),
+    ...(parseTimestamp(task.showAfter) !== undefined ? { showAfter: parseTimestamp(task.showAfter) } : {}),
+    ...(typeof task.order === 'number' ? { order: task.order } : {}),
+    ...(task.deleted === true ? { deleted: true } : {}),
     createdAt,
   };
 }
@@ -68,7 +79,7 @@ export function normalizeState(raw: unknown): AppState {
     : [];
 
   return {
-    tasks: resetRecurringTasks(tasks),
+    tasks,
     ...(typeof data.lastCelebrationDate === 'string'
       ? { lastCelebrationDate: data.lastCelebrationDate }
       : {}),
@@ -90,16 +101,39 @@ async function migrateLegacyWebStorage(): Promise<AppState | null> {
 }
 
 export async function loadState(): Promise<AppState> {
+  let raw: string | null = null;
   try {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!raw) {
+    raw = await AsyncStorage.getItem(STORAGE_KEY);
+  } catch (err) {
+    throw new DataCorruptionError('Failed to read from AsyncStorage');
+  }
+
+  if (!raw) {
+    try {
       const migrated = await migrateLegacyWebStorage();
       return migrated ?? defaultState();
+    } catch {
+      return defaultState();
     }
-    return normalizeState(JSON.parse(raw));
-  } catch {
-    return defaultState();
   }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    throw new DataCorruptionError('Local storage file contains invalid JSON');
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new DataCorruptionError('Local storage data is not a valid object');
+  }
+
+  const data = parsed as Record<string, unknown>;
+  if (data.tasks && !Array.isArray(data.tasks)) {
+    throw new DataCorruptionError('Local tasks data is corrupted (not an array)');
+  }
+
+  return normalizeState(parsed);
 }
 
 export async function saveState(state: AppState): Promise<void> {

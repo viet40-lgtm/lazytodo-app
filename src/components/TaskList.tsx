@@ -10,6 +10,7 @@ interface TaskListProps {
   onToggle: (id: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
+  onSkip: (id: string) => void;
   onLogTime: (id: string, minutes: number) => void;
   onReorder: (id: string, direction: 'up' | 'down') => void;
   emptyText?: string;
@@ -22,6 +23,7 @@ export function TaskList({
   onToggle,
   onEdit,
   onDelete,
+  onSkip,
   onLogTime,
   onReorder,
   emptyText = 'Nothing here yet.',
@@ -56,6 +58,7 @@ export function TaskList({
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
+              onSkip={onSkip}
               onLogTime={onLogTime}
               onReorder={onReorder}
             />
@@ -84,7 +87,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   icon: {
-    fontSize: 25,
+    fontSize: 30,
   },
   headerText: {
     flex: 1,

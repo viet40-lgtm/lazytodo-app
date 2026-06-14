@@ -41,7 +41,8 @@ const SECTION_OPTIONS: TaskSection[] = ['today', 'weekly', 'monthly', 'yearly'];
 const REPEAT_OPTIONS: { value: Recurring | ''; label: string }[] = [
   { value: '', label: 'No repeat' },
   { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Week' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Bi-Weekly' },
   { value: 'monthly', label: 'Month' },
   { value: 'yearly', label: 'Year' },
 ];
@@ -86,12 +87,14 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
     }
   }, [reminder]);
 
+  const requiresReminder = false;
+  const canSave = Boolean(name.trim()) && (!requiresReminder || Boolean(reminder));
+
   const handleSave = () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
+    if (!canSave) return;
     onSave({
-      name: trimmed,
-      section,
+      name: name.trim(),
+      section: recurring === 'daily' ? 'daily' : section,
       reminder: reminder || undefined,
       recurring: recurring || undefined,
     });
@@ -166,22 +169,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
               </View>
             </View>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>
-                Reminder <Text style={styles.optional}>(optional)</Text>
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <DateTimePickerUI value={reminder} onChange={setReminder} />
-                </View>
-                {reminder ? (
-                  <Pressable onPress={() => setReminder('')} style={{ padding: 8 }}>
-                    <Text style={{ color: APP_COLORS.delete, fontSize: 16, fontWeight: '600' }}>Clear</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            </View>
-
+            {/* Repeat — moved above Reminder */}
             <View style={styles.field}>
               <Text style={styles.label}>
                 Repeat <Text style={styles.optional}>(optional)</Text>
@@ -205,6 +193,25 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                 })}
               </View>
             </View>
+
+            {/* Reminder — required when repeat is set */}
+            <View style={styles.field}>
+              <Text style={styles.label}>
+                Reminder{requiresReminder && !reminder
+                  ? <Text style={styles.requiredHint}> — required for repeating tasks</Text>
+                  : null}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <DateTimePickerUI value={reminder} onChange={setReminder} />
+                </View>
+                {reminder ? (
+                  <Pressable onPress={() => setReminder('')} style={{ padding: 8 }}>
+                    <Text style={{ color: APP_COLORS.delete, fontSize: 16, fontWeight: '600' }}>Clear</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
           </ScrollView>
 
           <View style={styles.actions}>
@@ -215,10 +222,10 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
               style={({ pressed }) => [
                 styles.primaryBtn,
                 pressed && styles.primaryBtnPressed,
-                !name.trim() && styles.primaryBtnDisabled,
+                !canSave && styles.primaryBtnDisabled,
               ]}
               onPress={handleSave}
-              disabled={!name.trim()}
+              disabled={!canSave}
             >
               <Text style={styles.primaryBtnText}>{task ? 'Save goal' : 'Add goal'}</Text>
             </Pressable>
@@ -300,6 +307,11 @@ const styles = StyleSheet.create({
   optional: {
     fontWeight: '400',
     color: APP_COLORS.textSubtle,
+  },
+  requiredHint: {
+    fontWeight: '500',
+    color: APP_COLORS.delete,
+    fontSize: 14,
   },
   input: {
     fontSize: 25,

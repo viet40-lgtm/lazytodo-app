@@ -21,14 +21,17 @@ interface TaskItemProps {
   onToggle: (id: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
+  onSkip: (id: string) => void;
   onLogTime: (id: string, minutes: number) => void;
   onReorder: (id: string, direction: 'up' | 'down') => void;
 }
 
 function recurringLabel(recurring?: Task['recurring']): string | null {
-  if (recurring === 'weekly') return 'Week';
-  if (recurring === 'monthly') return 'Month';
-  if (recurring === 'yearly') return 'Year';
+  if (recurring === 'daily') return 'D';
+  if (recurring === 'weekly') return 'W';
+  if (recurring === 'biweekly') return 'B-W';
+  if (recurring === 'monthly') return 'M';
+  if (recurring === 'yearly') return 'Y';
   return null;
 }
 
@@ -57,6 +60,7 @@ function TaskRow({
   onToggle,
   onEdit,
   onDelete,
+  onSkip,
   onLogTime,
   onReorder,
 }: TaskItemProps) {
@@ -106,23 +110,31 @@ function TaskRow({
         </View>
       </View>
 
-      {hasMeta ? (
-        <Pressable style={styles.metaRow} onPress={() => onEdit(task)}>
-          <View>
+      {hasMeta || task.recurring ? (
+        <View style={styles.metaRow}>
+          <Pressable style={styles.metaRowContent} onPress={() => onEdit(task)}>
             {task.reminder ? (
               <View style={styles.metaChip}>
-                <Text style={styles.metaText}>⏰ {formatReminder(task.reminder)}</Text>
+                <Text style={styles.metaText}>{formatReminder(task.reminder)}</Text>
               </View>
             ) : null}
-          </View>
-          <View>
             {repeat ? (
               <View style={styles.metaChip}>
                 <Text style={styles.metaText}>↻ {repeat}</Text>
               </View>
             ) : null}
-          </View>
-        </Pressable>
+          </Pressable>
+          {Platform.OS === 'web' && task.recurring ? (
+            <Pressable
+              style={styles.metaSkipBtn}
+              onPress={() => onSkip(task.id)}
+              accessibilityLabel={`Skip ${task.name}`}
+              hitSlop={6}
+            >
+              <Text style={styles.metaSkipText}>Skip</Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
 
       <View style={styles.actionRow}>
@@ -137,12 +149,12 @@ function TaskRow({
         </View>
         <View style={{ flex: 1, alignItems: 'center' }}>
           <View style={styles.spentChip}>
-            <Text style={styles.spentText}>🕒 {formatDuration(task.spentMinutes)}</Text>
+            <Text style={styles.spentText}>{formatDuration(task.spentMinutes)}</Text>
           </View>
         </View>
         <View style={{ flex: 1, alignItems: 'flex-end' }}>
           <View style={styles.spentChip}>
-            <Text style={styles.createdText}>📅 {createdLabel(task.createdAt)}</Text>
+            <Text style={styles.createdText}>{createdLabel(task.createdAt)}</Text>
           </View>
         </View>
       </View>
@@ -182,7 +194,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     borderLeftWidth: 4,
     padding: SPACING.md,
-    gap: SPACING.md,
+    gap: SPACING.sm,
     ...softShadow(0.05, 8, 2),
   },
   cardDone: {
@@ -236,8 +248,8 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   name: {
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 25,
+    lineHeight: 28,
     fontWeight: '600',
     color: APP_COLORS.text,
   },
@@ -250,7 +262,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: SPACING.sm,
+    gap: SPACING.sm,
+  },
+  metaRowContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    flex: 1,
+  },
+  metaSkipBtn: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 4,
+    borderRadius: RADIUS.pill,
+    backgroundColor: APP_COLORS.surfaceMuted,
+    borderWidth: 1.5,
+    borderColor: APP_COLORS.primary,
+  },
+  metaSkipText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: APP_COLORS.primary,
   },
   metaChip: {
     backgroundColor: APP_COLORS.surfaceMuted,
@@ -259,7 +290,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   metaText: {
-    fontSize: 25,
+    fontSize: 20,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -267,7 +298,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: SPACING.sm,
   },
   timeBtn: {
     borderRadius: RADIUS.pill,
@@ -275,15 +305,15 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   timeBtnText: {
-    fontSize: 25,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
   },
   spentChip: {
     paddingVertical: SPACING.sm,
   },
   spentText: {
-    fontSize: 25,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: APP_COLORS.textMuted,
   },
   corner: {
@@ -293,10 +323,11 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   createdText: {
-    fontSize: 25,
+    fontSize: 20,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
   },
+
   webDelete: {
     width: 36,
     height: 36,
@@ -307,7 +338,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   webDeleteText: {
-    fontSize: 25,
+    fontSize: 20,
     lineHeight: 25,
     color: APP_COLORS.delete,
     fontWeight: '700',
@@ -325,6 +356,6 @@ const styles = StyleSheet.create({
   deleteText: {
     color: '#ffffff',
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

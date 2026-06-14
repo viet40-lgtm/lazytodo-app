@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppState, Task, TaskSection } from '../types';
 import { pullRemoteState, pushRemoteState } from '../services/cloud';
 import { syncReminders } from '../services/reminders';
-import { loadState, saveState } from '../services/storage';
+import { loadState, saveState, DataCorruptionError } from '../services/storage';
 import { isGoalComplete } from '../utils/progress';
+import { nextPeriodStart, advanceReminder, isTaskOverdue } from '../utils/recurring';
 
 function sortTasks(tasks: Task[]): Task[] {
   return [...tasks].sort((a, b) => {
@@ -37,6 +38,7 @@ export function useTasks(userId: string | null = null) {
   const [state, setState] = useState<AppState | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [isCorrupted, setIsCorrupted] = useState(false);
   const reminderSyncRef = useRef(0);
   const stateRef = useRef<AppState | null>(null);
   const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -48,6 +50,17 @@ export function useTasks(userId: string | null = null) {
       if (!active) return;
       setState(loaded);
       setHydrated(true);
+    }).catch((err) => {
+      if (err instanceof DataCorruptionError) {
+        if (!active) return;
+        setIsCorrupted(true);
+        setHydrated(true);
+      } else {
+        // Fallback for non-corruption errors
+        if (!active) return;
+        setState({ tasks: [], savedAt: Date.now() });
+        setHydrated(true);
+      }
     });
     return () => {
       active = false;
@@ -55,13 +68,13 @@ export function useTasks(userId: string | null = null) {
   }, []);
 
   useEffect(() => {
-    if (!hydrated || !state) return;
+    if (!hydrated || !state || isCorrupted) return;
     saveState(state).catch(() => {});
   }, [hydrated, state]);
 
   // Pull from cloud once when the user logs in, then reconcile by savedAt.
   useEffect(() => {
-    if (!hydrated || !userId) return;
+    if (!hydrated || !userId || isCorrupted) return;
     let active = true;
     setSyncing(true);
     (async () => {
@@ -82,7 +95,7 @@ export function useTasks(userId: string | null = null) {
 
   // Debounced push to cloud on every change while logged in.
   useEffect(() => {
-    if (!hydrated || !userId || !state) return;
+    if (!hydrated || !userId || !state || isCorrupted) return;
     if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
     pushTimerRef.current = setTimeout(() => {
       pushRemoteState(userId, state).catch(() => {});
@@ -119,7 +132,9 @@ export function useTasks(userId: string | null = null) {
   const updateTasks = useCallback((updater: (tasks: Task[]) => Task[]) => {
     setState((prev) => {
       if (!prev) return prev;
-      return { ...prev, tasks: sortTasks(updater(prev.tasks)), savedAt: Date.now() };
+      const newTasks = sortTasks(updater(prev.tasks));
+      console.log('updateTasks called! Previous count:', prev.tasks.length, 'New count:', newTasks.length);
+      return { ...prev, tasks: newTasks, savedAt: Date.now() };
     });
   }, []);
 
@@ -155,7 +170,7 @@ export function useTasks(userId: string | null = null) {
       if (!target) return tasks;
 
       const isCompleting = !target.completed;
-      const newTasks = tasks.map((task) =>
+      const toggled = tasks.map((task) =>
         task.id === id
           ? {
               ...task,
@@ -165,39 +180,65 @@ export function useTasks(userId: string | null = null) {
           : task,
       );
 
-      // Spawn a new recurring task when completed
+      // Spawn next occurrence immediately, hidden until next period starts
       if (isCompleting && target.recurring) {
-        let newReminder = target.reminder;
-        if (newReminder) {
-          const date = new Date(newReminder);
-          if (!isNaN(date.getTime())) {
-            if (target.recurring === 'daily') date.setDate(date.getDate() + 1);
-            else if (target.recurring === 'weekly') date.setDate(date.getDate() + 7);
-            else if (target.recurring === 'monthly') date.setMonth(date.getMonth() + 1);
-            else if (target.recurring === 'yearly') date.setFullYear(date.getFullYear() + 1);
-            
-            const pad = (n: number) => n.toString().padStart(2, '0');
-            newReminder = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-          }
+        // Only spawn if no future occurrence already exists
+        const alreadyQueued = tasks.some(
+          (t) => t.id !== id && t.name === target.name &&
+            t.section === target.section && !t.completed &&
+            t.showAfter !== undefined,
+        );
+        if (!alreadyQueued) {
+          toggled.push({
+            ...target,
+            id: createTaskId(),
+            completed: false,
+            completedAt: undefined,
+            createdAt: Date.now(),
+            spentMinutes: 0,
+            showAfter: nextPeriodStart(target.recurring),
+            reminder: target.reminder ? advanceReminder(target.reminder, target.recurring) : undefined,
+          });
         }
-
-        newTasks.push({
-          ...target,
-          id: createTaskId(),
-          completed: false,
-          completedAt: undefined,
-          createdAt: Date.now(),
-          spentMinutes: 0,
-          reminder: newReminder,
-        });
       }
 
-      return newTasks;
+      return toggled;
     });
   }, [updateTasks]);
 
   const deleteTask = useCallback((id: string) => {
-    updateTasks((tasks) => tasks.filter((task) => task.id !== id));
+    updateTasks((tasks) => tasks.map((task) => task.id === id ? { ...task, deleted: true } : task));
+  }, [updateTasks]);
+
+  const skipTask = useCallback((id: string) => {
+    updateTasks((tasks) => {
+      const target = tasks.find((t) => t.id === id);
+      if (!target) return tasks;
+
+      const remaining = tasks.map((t) => t.id === id ? { ...t, deleted: true } : t);
+
+      if (target.recurring) {
+        const alreadyQueued = tasks.some(
+          (t) => t.id !== id && t.name === target.name &&
+            t.section === target.section && !t.completed &&
+            t.showAfter !== undefined,
+        );
+        if (!alreadyQueued) {
+          remaining.push({
+            ...target,
+            id: createTaskId(),
+            completed: false,
+            completedAt: undefined,
+            createdAt: Date.now(),
+            spentMinutes: 0,
+            showAfter: nextPeriodStart(target.recurring),
+            reminder: target.reminder ? advanceReminder(target.reminder, target.recurring) : undefined,
+          });
+        }
+      }
+
+      return remaining;
+    });
   }, [updateTasks]);
 
   const reorderTask = useCallback((id: string, direction: 'up' | 'down') => {
@@ -245,6 +286,20 @@ export function useTasks(userId: string | null = null) {
     setState((prev) => (prev ? { ...prev, lastCelebrationDate: today, savedAt: Date.now() } : prev));
   }, []);
 
+  const loadFromBackup = useCallback((backup: AppState) => {
+    setState({ ...backup, savedAt: Date.now() + 9999999 });
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated || !state || isCorrupted) return;
+    const now = Date.now();
+    state.tasks.forEach((task) => {
+      if (!task.completed && !task.deleted && task.recurring && isTaskOverdue(task, now)) {
+        skipTask(task.id);
+      }
+    });
+  }, [hydrated, state, isCorrupted, skipTask]);
+
   const tasks = sortTasks(state?.tasks ?? []);
   const tasksBySection = (section: TaskSection) =>
     tasks.filter((task) => task.section === section);
@@ -263,7 +318,10 @@ export function useTasks(userId: string | null = null) {
     logTime,
     toggleTask,
     deleteTask,
+    skipTask,
     reorderTask,
     markCelebrated,
+    loadFromBackup,
+    isCorrupted,
   };
 }

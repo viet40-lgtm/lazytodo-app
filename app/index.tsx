@@ -7,19 +7,21 @@ import { CompletedModal } from '../src/components/CompletedModal';
 import { CompletionCelebration } from '../src/components/CompletionCelebration';
 import { FloatingButton } from '../src/components/FloatingButton';
 import { Quote } from '../src/components/Quote';
+import { SettingsModal } from '../src/components/SettingsModal';
 import { TaskList } from '../src/components/TaskList';
 import { TaskModal } from '../src/components/TaskModal';
 import { APP_COLORS, FAB_SIZE, RADIUS, SCREEN_PADDING, SPACING } from '../src/constants';
 import { getRandomQuote } from '../src/data/quotes';
 import { useAuth } from '../src/hooks/useAuth';
 import { useTasks } from '../src/hooks/useTasks';
-import type { Recurring, Task, TaskSection } from '../src/types';
+import type { AppState, Recurring, Task, TaskSection } from '../src/types';
 
 export default function HomeScreen() {
   const [quote] = useState(getRandomQuote);
   const [modalOpen, setModalOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [completedOpen, setCompletedOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [defaultSection, setDefaultSection] = useState<TaskSection>('today');
 
@@ -36,15 +38,39 @@ export default function HomeScreen() {
     logTime,
     toggleTask,
     deleteTask,
+    skipTask,
     reorderTask,
     markCelebrated,
+    loadFromBackup,
+    isCorrupted,
   } = useTasks(auth.userId);
 
-  const todayTasks = useMemo(() => tasks.filter((task) => task.section === 'today' && !task.completed), [tasks]);
-  const dailyTasks = useMemo(() => tasks.filter((task) => task.section === 'daily' && !task.completed), [tasks]);
-  const weeklyTasks = useMemo(() => tasks.filter((task) => task.section === 'weekly' && !task.completed), [tasks]);
-  const monthlyTasks = useMemo(() => tasks.filter((task) => task.section === 'monthly' && !task.completed), [tasks]);
-  const yearlyTasks = useMemo(() => tasks.filter((task) => task.section === 'yearly' && !task.completed), [tasks]);
+  const handleRestoreBackup = (restored: AppState) => {
+    loadFromBackup(restored);
+    setSettingsOpen(false);
+  };
+
+  const now = Date.now();
+  const isVisible = (task: Task) => !task.deleted && (!task.showAfter || task.showAfter <= now);
+
+  const getEffectiveSection = (task: Task) => {
+    if (task.section === 'daily') return 'daily';
+    if (task.reminder) {
+      const reminderDate = new Date(task.reminder);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+      if (reminderDate.getTime() <= todayEnd.getTime()) {
+        return 'today';
+      }
+    }
+    return task.section;
+  };
+
+  const todayTasks = useMemo(() => tasks.filter((task) => getEffectiveSection(task) === 'today' && !task.completed && isVisible(task)), [tasks, now]);
+  const dailyTasks = useMemo(() => tasks.filter((task) => getEffectiveSection(task) === 'daily' && !task.completed && isVisible(task)), [tasks, now]);
+  const weeklyTasks = useMemo(() => tasks.filter((task) => getEffectiveSection(task) === 'weekly' && !task.completed && isVisible(task)), [tasks, now]);
+  const monthlyTasks = useMemo(() => tasks.filter((task) => getEffectiveSection(task) === 'monthly' && !task.completed && isVisible(task)), [tasks, now]);
+  const yearlyTasks = useMemo(() => tasks.filter((task) => getEffectiveSection(task) === 'yearly' && !task.completed && isVisible(task)), [tasks, now]);
 
   useEffect(() => {
     if (allDone && !celebratedToday) {
@@ -92,6 +118,20 @@ export default function HomeScreen() {
     );
   }
 
+  if (isCorrupted) {
+    return (
+      <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', color: APP_COLORS.delete, marginBottom: 10 }}>⚠️ Sync Halted</Text>
+        <Text style={{ textAlign: 'center', color: APP_COLORS.text, marginBottom: 20, fontSize: 16 }}>
+          Your local storage file is corrupted or unreadable. To protect your cloud data, all background syncing has been disabled.
+        </Text>
+        <Text style={{ textAlign: 'center', color: APP_COLORS.textMuted, marginBottom: 20 }}>
+          Please clear your app data or reinstall to safely fetch your healthy data from the cloud, or use a backup file if you have one.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <AppHeader
@@ -113,6 +153,7 @@ export default function HomeScreen() {
           onToggle={toggleTask}
           onEdit={openEdit}
           onDelete={deleteTask}
+          onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
           emptyText="Things you do every day."
@@ -124,6 +165,7 @@ export default function HomeScreen() {
           onToggle={toggleTask}
           onEdit={openEdit}
           onDelete={deleteTask}
+          onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
           emptyText="No goals yet. Tap + when you're ready."
@@ -135,6 +177,7 @@ export default function HomeScreen() {
           onToggle={toggleTask}
           onEdit={openEdit}
           onDelete={deleteTask}
+          onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
           emptyText="Bigger stuff for this week."
@@ -146,6 +189,7 @@ export default function HomeScreen() {
           onToggle={toggleTask}
           onEdit={openEdit}
           onDelete={deleteTask}
+          onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
           emptyText="Goals for this month."
@@ -157,6 +201,7 @@ export default function HomeScreen() {
           onToggle={toggleTask}
           onEdit={openEdit}
           onDelete={deleteTask}
+          onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
           emptyText="Long-term goals. No rush."
@@ -164,6 +209,9 @@ export default function HomeScreen() {
         <Quote text={quote} />
         <Pressable style={styles.completedBtn} onPress={() => setCompletedOpen(true)}>
           <Text style={styles.completedBtnText}>View Completed</Text>
+        </Pressable>
+        <Pressable style={styles.settingsBtn} onPress={() => setSettingsOpen(true)}>
+          <Text style={styles.settingsBtnText}>⚙️  Settings</Text>
         </Pressable>
         <CompletionCelebration show={allDone} />
       </ScrollView>
@@ -189,6 +237,11 @@ export default function HomeScreen() {
         tasks={tasks}
         onClose={() => setCompletedOpen(false)}
         onDelete={deleteTask}
+      />
+      <SettingsModal
+        visible={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onRestore={handleRestoreBackup}
       />
     </SafeAreaView>
   );
@@ -223,5 +276,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  settingsBtn: {
+    backgroundColor: 'transparent',
+    borderRadius: RADIUS.md,
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: APP_COLORS.border,
+  },
+  settingsBtnText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: APP_COLORS.textMuted,
   },
 });
