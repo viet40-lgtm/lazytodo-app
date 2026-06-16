@@ -1,4 +1,5 @@
 import type { Recurring, Task } from '../types';
+import { normalizeRecurring } from './recurringList';
 
 function startOfDay(date: Date): Date {
   const d = new Date(date);
@@ -97,7 +98,9 @@ export function advanceReminder(reminderIso: string, recurring: Recurring): stri
 
 /** Determines if a recurring task is past its due date (and should be auto-skipped) */
 export function isTaskOverdue(task: Task, now = Date.now()): boolean {
-  if (!task.recurring) return false;
+  const repeats = normalizeRecurring(task.recurring);
+  if (repeats.length !== 1) return false;
+  const recurring = repeats[0];
 
   if (task.reminder) {
     // Overdue if past midnight of the reminder day
@@ -109,6 +112,6 @@ export function isTaskOverdue(task: Task, now = Date.now()): boolean {
   // No reminder. Overdue if past the start of the NEXT natural period.
   // The task's "current" period is anchored by showAfter or createdAt.
   const anchor = task.showAfter || task.createdAt;
-  const deadline = nextPeriodStart(task.recurring, new Date(anchor));
+  const deadline = nextPeriodStart(recurring, new Date(anchor));
   return now >= deadline;
 }

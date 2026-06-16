@@ -1,24 +1,26 @@
-import { useRef } from 'react';
+import { memo, useCallback, useRef } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import {
   APP_COLORS,
   RADIUS,
-  SECTION_LABELS,
-  SECTION_THEMES,
   SPACING,
-  getMoveTargets,
   softShadow,
 } from '../constants';
 import type { Task, TaskSection } from '../types';
+import { formatSectionTime } from '../utils/periodTotals';
+import { hasRecurring } from '../utils/recurringList';
+import { recurringLabelShort } from '../utils/series';
+
 import { formatDuration } from '../utils/time';
 
 interface TaskItemProps {
   task: Task;
+  listSection: TaskSection;
   accentColor: string;
   accentSoft: string;
   trackColor: string;
-  onToggle: (id: string) => void;
+  onToggle: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onSkip: (id: string) => void;
@@ -27,12 +29,8 @@ interface TaskItemProps {
 }
 
 function recurringLabel(recurring?: Task['recurring']): string | null {
-  if (recurring === 'daily') return 'D';
-  if (recurring === 'weekly') return 'W';
-  if (recurring === 'biweekly') return 'B-W';
-  if (recurring === 'monthly') return 'M';
-  if (recurring === 'yearly') return 'Y';
-  return null;
+  if (!recurring?.length) return null;
+  return recurringLabelShort(recurring);
 }
 
 function formatReminder(reminder: string): string {
@@ -54,6 +52,7 @@ function createdLabel(createdAt: number): string {
 
 function TaskRow({
   task,
+  listSection,
   accentColor,
   accentSoft,
   trackColor,
@@ -77,7 +76,7 @@ function TaskRow({
             { borderColor: APP_COLORS.primary },
             done && { backgroundColor: APP_COLORS.primary, borderColor: APP_COLORS.primary },
           ]}
-          onPress={() => onToggle(task.id)}
+          onPress={() => onToggle(task)}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: done }}
           hitSlop={8}
@@ -110,7 +109,7 @@ function TaskRow({
         </View>
       </View>
 
-      {hasMeta || task.recurring ? (
+      {hasMeta || hasRecurring(task) ? (
         <View style={styles.metaRow}>
           <Pressable style={styles.metaRowContent} onPress={() => onEdit(task)}>
             {task.reminder ? (
@@ -124,7 +123,7 @@ function TaskRow({
               </View>
             ) : null}
           </Pressable>
-          {Platform.OS === 'web' && task.recurring ? (
+          {Platform.OS === 'web' && hasRecurring(task) ? (
             <Pressable
               style={styles.metaSkipBtn}
               onPress={() => onSkip(task.id)}
@@ -138,18 +137,31 @@ function TaskRow({
       ) : null}
 
       <View style={styles.actionRow}>
-        <View style={{ flex: 1, alignItems: 'flex-start' }}>
+        <View style={styles.timeBtnGroup}>
           <Pressable
             style={[styles.timeBtn, { backgroundColor: accentSoft }]}
-            onPress={() => onLogTime(task.id, 15)}
+            onPress={() => onLogTime(task.id, 5)}
             hitSlop={4}
           >
-            <Text style={[styles.timeBtnText, { color: accentColor }]}>+15m</Text>
+            <Text style={[styles.timeBtnText, { color: accentColor }]}>+5m</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.timeBtn, { backgroundColor: accentSoft }]}
+            onPress={() => onLogTime(task.id, 30)}
+            hitSlop={4}
+          >
+            <Text style={[styles.timeBtnText, { color: accentColor }]}>+30m</Text>
           </Pressable>
         </View>
         <View style={{ flex: 1, alignItems: 'center' }}>
           <View style={styles.spentChip}>
-            <Text style={styles.spentText}>{formatDuration(task.spentMinutes)}</Text>
+            {hasRecurring(task) ? (
+              <Text style={styles.spentText} numberOfLines={2}>
+                {formatSectionTime(task, listSection)}
+              </Text>
+            ) : (
+              <Text style={styles.spentText}>{formatDuration(task.spentMinutes)}</Text>
+            )}
           </View>
         </View>
         <View style={{ flex: 1, alignItems: 'flex-end' }}>
@@ -162,14 +174,10 @@ function TaskRow({
   );
 }
 
-export function TaskItem(props: TaskItemProps) {
+function TaskItemBase(props: TaskItemProps) {
   const swipeRef = useRef<Swipeable>(null);
 
-  if (Platform.OS === 'web') {
-    return <TaskRow {...props} />;
-  }
-
-  const renderRightActions = () => (
+  const renderRightActions = useCallback(() => (
     <Pressable
       style={styles.deleteAction}
       onPress={() => {
@@ -179,7 +187,11 @@ export function TaskItem(props: TaskItemProps) {
     >
       <Text style={styles.deleteText}>Delete</Text>
     </Pressable>
-  );
+  ), [props.onDelete, props.task.id]);
+
+  if (Platform.OS === 'web') {
+    return <TaskRow {...props} />;
+  }
 
   return (
     <Swipeable ref={swipeRef} renderRightActions={renderRightActions} overshootRight={false}>
@@ -187,6 +199,8 @@ export function TaskItem(props: TaskItemProps) {
     </Swipeable>
   );
 }
+
+export const TaskItem = memo(TaskItemBase);
 
 const styles = StyleSheet.create({
   card: {
@@ -298,6 +312,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: SPACING.sm,
+  },
+  timeBtnGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
   },
   timeBtn: {
     borderRadius: RADIUS.pill,

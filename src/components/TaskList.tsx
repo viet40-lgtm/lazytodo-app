@@ -1,3 +1,4 @@
+import { memo, type ReactElement } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { APP_COLORS, RADIUS, SPACING, getSectionTheme } from '../constants';
 import type { Task, TaskSection } from '../types';
@@ -7,7 +8,7 @@ interface TaskListProps {
   section: TaskSection;
   title: string;
   tasks: Task[];
-  onToggle: (id: string) => void;
+  onToggle: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onSkip: (id: string) => void;
@@ -16,7 +17,7 @@ interface TaskListProps {
   emptyText?: string;
 }
 
-export function TaskList({
+function TaskListBase({
   section,
   title,
   tasks,
@@ -27,7 +28,7 @@ export function TaskList({
   onLogTime,
   onReorder,
   emptyText = 'Nothing here yet.',
-}: TaskListProps) {
+}: TaskListProps): ReactElement {
   const theme = getSectionTheme(section);
   const isEmpty = tasks.length === 0;
 
@@ -52,6 +53,7 @@ export function TaskList({
             <TaskItem
               key={task.id}
               task={task}
+              listSection={section}
               accentColor={theme.accent}
               accentSoft={theme.accentSoft}
               trackColor={theme.track}
@@ -68,6 +70,8 @@ export function TaskList({
     </View>
   );
 }
+
+export const TaskList = memo(TaskListBase);
 
 const styles = StyleSheet.create({
   container: {
@@ -97,11 +101,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: '800',
     letterSpacing: -0.3,
-  },
-  tagline: {
-    fontSize: 20,
-    color: APP_COLORS.textSubtle,
-    marginTop: 1,
   },
   list: {
     gap: SPACING.sm,

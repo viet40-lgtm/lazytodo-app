@@ -1,6 +1,11 @@
 export type Recurring = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly';
 export type TaskSection = 'today' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
+export interface TimeLogEntry {
+  at: number;
+  minutes: number;
+}
+
 export interface Task {
   id: string;
   name: string;
@@ -10,12 +15,16 @@ export interface Task {
   completedAt?: number;
   showAfter?: number;
   reminder?: string;
-  recurring?: Recurring;
+  /** One or more repeat schedules; task can appear in multiple sections. */
+  recurring?: Recurring[];
   notificationId?: string;
   createdAt: number;
   updatedAt?: number;
   order?: number;
   deleted?: boolean;
+  seriesId?: string;
+  seriesTotalMinutes?: number;
+  timeLogs?: TimeLogEntry[];
 }
 
 export interface AppState {

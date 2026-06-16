@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../src/components/AppHeader';
 import { AuthModal } from '../src/components/AuthModal';
 import { CompletedModal } from '../src/components/CompletedModal';
+import { ConfirmModal } from '../src/components/ConfirmModal';
 import { CompletionCelebration } from '../src/components/CompletionCelebration';
-import { FloatingButton } from '../src/components/FloatingButton';
 import { Quote } from '../src/components/Quote';
 import { SettingsModal } from '../src/components/SettingsModal';
 import { TaskList } from '../src/components/TaskList';
@@ -15,6 +15,9 @@ import { getRandomQuote } from '../src/data/quotes';
 import { useAuth } from '../src/hooks/useAuth';
 import { useTasks } from '../src/hooks/useTasks';
 import type { AppState, Recurring, Task, TaskSection } from '../src/types';
+import { hasRecurring, taskShowsInSection } from '../src/utils/recurringList';
+
+const HOME_SECTIONS: TaskSection[] = ['daily', 'today', 'weekly', 'monthly', 'yearly'];
 
 export default function HomeScreen() {
   const [quote] = useState(getRandomQuote);
@@ -24,6 +27,7 @@ export default function HomeScreen() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [defaultSection, setDefaultSection] = useState<TaskSection>('today');
+  const [removeConfirmId, setRemoveConfirmId] = useState<string | null>(null);
 
   const auth = useAuth();
 
@@ -51,27 +55,32 @@ export default function HomeScreen() {
     setSettingsOpen(false);
   };
 
-  const now = Date.now();
-  const isVisible = (task: Task) => !task.deleted && (!task.showAfter || task.showAfter <= now);
+  const { todayTasks, dailyTasks, weeklyTasks, monthlyTasks, yearlyTasks } = useMemo(() => {
+    const now = Date.now();
+    const buckets: Record<TaskSection, Task[]> = {
+      today: [],
+      daily: [],
+      weekly: [],
+      monthly: [],
+      yearly: [],
+    };
 
-  const getEffectiveSection = (task: Task) => {
-    if (task.section === 'daily') return 'daily';
-    if (task.reminder) {
-      const reminderDate = new Date(task.reminder);
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
-      if (reminderDate.getTime() <= todayEnd.getTime()) {
-        return 'today';
+    for (const task of tasks) {
+      for (const section of HOME_SECTIONS) {
+        if (taskShowsInSection(task, section, now)) {
+          buckets[section].push(task);
+        }
       }
     }
-    return task.section;
-  };
 
-  const todayTasks = useMemo(() => tasks.filter((task) => getEffectiveSection(task) === 'today' && !task.completed && isVisible(task)), [tasks, now]);
-  const dailyTasks = useMemo(() => tasks.filter((task) => getEffectiveSection(task) === 'daily' && !task.completed && isVisible(task)), [tasks, now]);
-  const weeklyTasks = useMemo(() => tasks.filter((task) => getEffectiveSection(task) === 'weekly' && !task.completed && isVisible(task)), [tasks, now]);
-  const monthlyTasks = useMemo(() => tasks.filter((task) => getEffectiveSection(task) === 'monthly' && !task.completed && isVisible(task)), [tasks, now]);
-  const yearlyTasks = useMemo(() => tasks.filter((task) => getEffectiveSection(task) === 'yearly' && !task.completed && isVisible(task)), [tasks, now]);
+    return {
+      todayTasks: buckets.today,
+      dailyTasks: buckets.daily,
+      weeklyTasks: buckets.weekly,
+      monthlyTasks: buckets.monthly,
+      yearlyTasks: buckets.yearly,
+    };
+  }, [tasks]);
 
   useEffect(() => {
     if (allDone && !celebratedToday) {
@@ -79,35 +88,51 @@ export default function HomeScreen() {
     }
   }, [allDone, celebratedToday, markCelebrated]);
 
-  const handleSave = (data: {
+  const handleSave = useCallback((data: {
     name: string;
     section: TaskSection;
     reminder?: string;
-    recurring?: Recurring;
+    recurring?: Recurring[];
   }) => {
     if (editingTask) {
       updateTask(editingTask.id, data);
     } else {
       addTask(data);
     }
-  };
+  }, [editingTask, updateTask, addTask]);
 
-  const openAdd = (section: TaskSection = 'today') => {
+  const openAdd = useCallback((section: TaskSection = 'today') => {
     setEditingTask(null);
     setDefaultSection(section);
     setModalOpen(true);
-  };
+  }, []);
 
-  const openEdit = (task: Task) => {
+  const openEdit = useCallback((task: Task) => {
     setEditingTask(task);
     setDefaultSection(task.section);
     setModalOpen(true);
-  };
+  }, []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setModalOpen(false);
     setEditingTask(null);
-  };
+  }, []);
+
+  const handleToggle = useCallback(
+    (task: Task) => {
+      if (hasRecurring(task)) {
+        setRemoveConfirmId(task.id);
+        return;
+      }
+      toggleTask(task.id);
+    },
+    [toggleTask],
+  );
+
+  const confirmRemoveRepeat = useCallback(() => {
+    if (removeConfirmId) deleteTask(removeConfirmId);
+    setRemoveConfirmId(null);
+  }, [removeConfirmId, deleteTask]);
 
   if (!hydrated) {
     return (
@@ -154,7 +179,7 @@ export default function HomeScreen() {
           section="daily"
           title="Daily"
           tasks={dailyTasks}
-          onToggle={toggleTask}
+          onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={deleteTask}
           onSkip={skipTask}
@@ -166,7 +191,7 @@ export default function HomeScreen() {
           section="today"
           title="Today"
           tasks={todayTasks}
-          onToggle={toggleTask}
+          onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={deleteTask}
           onSkip={skipTask}
@@ -178,7 +203,7 @@ export default function HomeScreen() {
           section="weekly"
           title="Week"
           tasks={weeklyTasks}
-          onToggle={toggleTask}
+          onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={deleteTask}
           onSkip={skipTask}
@@ -190,7 +215,7 @@ export default function HomeScreen() {
           section="monthly"
           title="Month"
           tasks={monthlyTasks}
-          onToggle={toggleTask}
+          onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={deleteTask}
           onSkip={skipTask}
@@ -202,7 +227,7 @@ export default function HomeScreen() {
           section="yearly"
           title="Year"
           tasks={yearlyTasks}
-          onToggle={toggleTask}
+          onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={deleteTask}
           onSkip={skipTask}
@@ -246,6 +271,15 @@ export default function HomeScreen() {
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onRestore={handleRestoreBackup}
+      />
+      <ConfirmModal
+        visible={removeConfirmId !== null}
+        title="Remove repeat task?"
+        message="Are you sure you want to remove this repeat task?"
+        confirmLabel="Yes"
+        cancelLabel="Cancel"
+        onConfirm={confirmRemoveRepeat}
+        onCancel={() => setRemoveConfirmId(null)}
       />
     </SafeAreaView>
   );

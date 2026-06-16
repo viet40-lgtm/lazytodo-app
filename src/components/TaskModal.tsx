@@ -21,6 +21,7 @@ import {
   softShadow,
 } from '../constants';
 import type { Recurring, Task, TaskSection } from '../types';
+import { normalizeRecurring } from '../utils/recurringList';
 import { DateTimePickerUI } from './DateTimePickerUI';
 
 interface TaskModalProps {
@@ -31,18 +32,17 @@ interface TaskModalProps {
     name: string;
     section: TaskSection;
     reminder?: string;
-    recurring?: Recurring;
+    recurring?: Recurring[];
   }) => void;
   onClose: () => void;
 }
 
 const SECTION_OPTIONS: TaskSection[] = ['today', 'weekly', 'monthly', 'yearly'];
 
-const REPEAT_OPTIONS: { value: Recurring | ''; label: string }[] = [
-  { value: '', label: 'No repeat' },
+const REPEAT_OPTIONS: { value: Recurring; label: string }[] = [
   { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'biweekly', label: 'Bi-Weekly' },
+  { value: 'weekly', label: 'Week' },
+  { value: 'biweekly', label: 'Bi-Week' },
   { value: 'monthly', label: 'Month' },
   { value: 'yearly', label: 'Year' },
 ];
@@ -51,7 +51,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
   const [name, setName] = useState(task?.name ?? '');
   const [section, setSection] = useState<TaskSection>(task?.section ?? defaultSection);
   const [reminder, setReminder] = useState(task?.reminder ?? '');
-  const [recurring, setRecurring] = useState<Recurring | ''>(task?.recurring ?? '');
+  const [recurring, setRecurring] = useState<Recurring[]>([]);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
     setName(task?.name ?? '');
     setSection(task?.section ?? defaultSection);
     setReminder(task?.reminder ?? '');
-    setRecurring(task?.recurring ?? '');
+    setRecurring(normalizeRecurring(task?.recurring));
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
   }, [visible, task, defaultSection]);
@@ -90,13 +90,19 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
   const requiresReminder = false;
   const canSave = Boolean(name.trim()) && (!requiresReminder || Boolean(reminder));
 
+  const toggleRepeat = (value: Recurring) => {
+    setRecurring((prev) =>
+      prev.includes(value) ? prev.filter((r) => r !== value) : [...prev, value],
+    );
+  };
+
   const handleSave = () => {
     if (!canSave) return;
     onSave({
       name: name.trim(),
-      section: recurring === 'daily' ? 'daily' : section,
+      section: recurring.includes('daily') ? 'daily' : section,
       reminder: reminder || undefined,
-      recurring: recurring || undefined,
+      recurring: recurring.length ? recurring : undefined,
     });
     onClose();
   };
@@ -143,44 +149,16 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Section</Text>
-              <View style={styles.chipRow}>
-                {SECTION_OPTIONS.map((option) => {
-                  const theme = SECTION_THEMES[option];
-                  const selected = section === option;
-                  return (
-                    <Pressable
-                      key={option}
-                      onPress={() => setSection(option)}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      style={[
-                        styles.chip,
-                        selected && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
-                      ]}
-                    >
-                      <Text style={styles.chipIcon}>{theme.icon}</Text>
-                      <Text style={[styles.chipText, selected && { color: theme.accent }]}>
-                        {SECTION_LABELS[option]}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Repeat — moved above Reminder */}
-            <View style={styles.field}>
               <Text style={styles.label}>
-                Repeat <Text style={styles.optional}>(optional)</Text>
+                Repeat <Text style={styles.optional}>(optional — pick any)</Text>
               </Text>
               <View style={styles.chipRow}>
                 {REPEAT_OPTIONS.map((option) => {
-                  const selected = recurring === option.value;
+                  const selected = recurring.includes(option.value);
                   return (
                     <Pressable
                       key={option.label}
-                      onPress={() => setRecurring(option.value)}
+                      onPress={() => toggleRepeat(option.value)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
                       style={[styles.chip, selected && styles.chipSelected]}
@@ -194,7 +172,35 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
               </View>
             </View>
 
-            {/* Reminder — required when repeat is set */}
+            {recurring.length === 0 ? (
+              <View style={styles.field}>
+                <Text style={styles.label}>Section</Text>
+                <View style={styles.chipRow}>
+                  {SECTION_OPTIONS.map((option) => {
+                    const theme = SECTION_THEMES[option];
+                    const selected = section === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => setSection(option)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        style={[
+                          styles.chip,
+                          selected && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
+                        ]}
+                      >
+                        <Text style={styles.chipIcon}>{theme.icon}</Text>
+                        <Text style={[styles.chipText, selected && { color: theme.accent }]}>
+                          {SECTION_LABELS[option]}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
             <View style={styles.field}>
               <Text style={styles.label}>
                 Reminder{requiresReminder && !reminder

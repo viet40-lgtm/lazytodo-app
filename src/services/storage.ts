@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LEGACY_WEB_STORAGE_KEY, STORAGE_KEY } from '../constants';
-import type { AppState, Task, TaskSection } from '../types';
+import type { AppState, Recurring, Task, TaskSection, TimeLogEntry } from '../types';
 
 
 export class DataCorruptionError extends Error {
@@ -24,12 +24,44 @@ function parseTimestamp(value: unknown): number | undefined {
   return undefined;
 }
 
+const VALID_RECURRING: Recurring[] = ['daily', 'weekly', 'biweekly', 'monthly', 'yearly'];
+
+function normalizeRecurringField(raw: unknown): Recurring[] | undefined {
+  if (Array.isArray(raw)) {
+    const list = raw.filter((r): r is Recurring => VALID_RECURRING.includes(r as Recurring));
+    return list.length ? list : undefined;
+  }
+  if (typeof raw === 'string' && VALID_RECURRING.includes(raw as Recurring)) {
+    return [raw as Recurring];
+  }
+  return undefined;
+}
+
+function normalizeTimeLogs(raw: unknown, spentMinutes: number, createdAt: number): TimeLogEntry[] | undefined {
+  if (Array.isArray(raw)) {
+    const logs = raw
+      .map((entry) => {
+        if (!entry || typeof entry !== 'object') return null;
+        const e = entry as Record<string, unknown>;
+        const at = parseTimestamp(e.at);
+        const minutes = typeof e.minutes === 'number' ? Math.round(e.minutes) : 0;
+        if (at === undefined || minutes <= 0) return null;
+        return { at, minutes };
+      })
+      .filter((e): e is TimeLogEntry => e !== null);
+    if (logs.length) return logs;
+  }
+  if (spentMinutes > 0) return [{ at: createdAt, minutes: spentMinutes }];
+  return undefined;
+}
+
 function normalizeTask(raw: unknown): Task | null {
   if (!raw || typeof raw !== 'object') return null;
   const task = raw as Record<string, unknown>;
   if (typeof task.id !== 'string' || typeof task.name !== 'string') return null;
 
   const createdAt = parseTimestamp(task.createdAt) ?? Date.now();
+  const recurring = normalizeRecurringField(task.recurring);
   let section: TaskSection =
     task.section === 'daily' ||
     task.section === 'weekly' ||
@@ -38,13 +70,15 @@ function normalizeTask(raw: unknown): Task | null {
       ? task.section
       : 'today';
 
-  if (task.recurring === 'daily') {
+  if (recurring?.includes('daily')) {
     section = 'daily';
   }
   const spentMinutes =
     typeof task.spentMinutes === 'number' && task.spentMinutes >= 0
       ? Math.round(task.spentMinutes)
       : 0;
+
+  const timeLogs = normalizeTimeLogs(task.timeLogs, spentMinutes, createdAt);
 
   return {
     id: task.id,
@@ -56,18 +90,17 @@ function normalizeTask(raw: unknown): Task | null {
       ? { completedAt: parseTimestamp(task.completedAt) }
       : {}),
     ...(typeof task.reminder === 'string' && task.reminder ? { reminder: task.reminder } : {}),
-    ...(task.recurring === 'daily' ||
-    task.recurring === 'weekly' ||
-    task.recurring === 'biweekly' ||
-    task.recurring === 'monthly' ||
-    task.recurring === 'yearly'
-      ? { recurring: task.recurring }
-      : {}),
+    ...(recurring ? { recurring } : {}),
+    ...(timeLogs ? { timeLogs } : {}),
     ...(typeof task.notificationId === 'string' ? { notificationId: task.notificationId } : {}),
     ...(parseTimestamp(task.showAfter) !== undefined ? { showAfter: parseTimestamp(task.showAfter) } : {}),
     ...(typeof task.order === 'number' ? { order: task.order } : {}),
     ...(task.deleted === true ? { deleted: true } : {}),
     ...(parseTimestamp(task.updatedAt) !== undefined ? { updatedAt: parseTimestamp(task.updatedAt) } : {}),
+    ...(typeof task.seriesId === 'string' ? { seriesId: task.seriesId } : {}),
+    ...(typeof task.seriesTotalMinutes === 'number' && task.seriesTotalMinutes >= 0
+      ? { seriesTotalMinutes: Math.round(task.seriesTotalMinutes) }
+      : {}),
     createdAt,
   };
 }
@@ -154,7 +187,6 @@ export function mergeStates(local: AppState, remote: AppState): { merged: AppSta
   const localMap = new Map(local.tasks.map(t => [t.id, t]));
   const remoteMap = new Map(remote.tasks.map(t => [t.id, t]));
 
-  console.log(`[SmartMerge] Local tasks: ${localMap.size}, Remote tasks: ${remoteMap.size}`);
 
   // 1. Process all remote tasks
   for (const [id, rTask] of remoteMap) {
@@ -163,7 +195,6 @@ export function mergeStates(local: AppState, remote: AppState): { merged: AppSta
       // Exists only remotely -> we want it
       mergedTasks.set(id, rTask);
       localChanged = true;
-      console.log(`[SmartMerge] Added remote-only task: ${rTask.name}`);
     } else {
       // Exists in both -> resolve conflict
       const rTime = rTask.updatedAt || rTask.createdAt;
@@ -172,11 +203,9 @@ export function mergeStates(local: AppState, remote: AppState): { merged: AppSta
       if (rTime > lTime) {
         mergedTasks.set(id, rTask);
         localChanged = true;
-        console.log(`[SmartMerge] Remote task newer: ${rTask.name}`);
       } else if (lTime > rTime) {
         mergedTasks.set(id, lTask);
         remoteChanged = true;
-        console.log(`[SmartMerge] Local task newer: ${lTask.name}`);
       } else {
         // Equal timestamps, just stick with local
         mergedTasks.set(id, lTask);
@@ -189,11 +218,9 @@ export function mergeStates(local: AppState, remote: AppState): { merged: AppSta
     if (!remoteMap.has(id)) {
       mergedTasks.set(id, lTask);
       remoteChanged = true;
-      console.log(`[SmartMerge] Added local-only task: ${lTask.name}`);
     }
   }
 
-  console.log(`[SmartMerge] Finished. Local changed? ${localChanged}, Remote changed? ${remoteChanged}. Total merged tasks: ${mergedTasks.size}`);
 
   const merged: AppState = {
     tasks: Array.from(mergedTasks.values()),
