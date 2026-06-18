@@ -47,7 +47,6 @@ export default function HomeScreen() {
     markCelebrated,
     loadFromBackup,
     forceSync,
-    isCorrupted,
   } = useTasks(auth.userId);
 
   const handleRestoreBackup = (restored: AppState) => {
@@ -144,19 +143,6 @@ export default function HomeScreen() {
     );
   }
 
-  if (isCorrupted) {
-    return (
-      <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
-        <Text style={{ fontSize: 24, fontWeight: 'bold', color: APP_COLORS.delete, marginBottom: 10 }}>⚠️ Sync Halted</Text>
-        <Text style={{ textAlign: 'center', color: APP_COLORS.text, marginBottom: 20, fontSize: 16 }}>
-          Your local storage file is corrupted or unreadable. To protect your cloud data, all background syncing has been disabled.
-        </Text>
-        <Text style={{ textAlign: 'center', color: APP_COLORS.textMuted, marginBottom: 20 }}>
-          Please clear your app data or reinstall to safely fetch your healthy data from the cloud, or use a backup file if you have one.
-        </Text>
-      </View>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>

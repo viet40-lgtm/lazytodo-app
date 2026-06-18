@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AppState, Task, TaskSection } from '../types';
+import type { AppState, Task } from '../types';
 import { pushRemoteState, pullRemoteState, subscribeToRemoteState } from '../services/cloud';
 import { syncReminders } from '../services/reminders';
-import { loadState, saveState, DataCorruptionError, mergeStates } from '../services/storage';
 import { isTaskOverdue } from '../utils/recurring';
 import { isQueuedSuccessor } from '../utils/series';
 import { hasRecurring, normalizeRecurring } from '../utils/recurringList';
@@ -41,145 +40,78 @@ export function useTasks(userId: string | null = null) {
   const [state, setState] = useState<AppState | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [isCorrupted, setIsCorrupted] = useState(false);
   const reminderSyncRef = useRef(0);
   const stateRef = useRef<AppState | null>(null);
   const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialSyncDoneRef = useRef(false);
   stateRef.current = state;
 
-  // Load from local storage once on mount.
+  // Load from cloud whenever userId changes.
   useEffect(() => {
+    if (!userId) {
+      setState(null);
+      setHydrated(false);
+      return;
+    }
     let active = true;
-    loadState()
-      .then((loaded) => {
+    setHydrated(false);
+    setSyncing(true);
+    pullRemoteState(userId)
+      .then((remote) => {
         if (!active) return;
-        setState(loaded);
+        setState(remote ?? { tasks: [], savedAt: Date.now() });
         setHydrated(true);
+        setSyncing(false);
       })
-      .catch((err) => {
+      .catch(() => {
         if (!active) return;
-        if (err instanceof DataCorruptionError) {
-          setIsCorrupted(true);
-        } else {
-          setState({ tasks: [], savedAt: Date.now() });
-        }
+        setState({ tasks: [], savedAt: Date.now() });
         setHydrated(true);
+        setSyncing(false);
       });
     return () => {
       active = false;
     };
-  }, []);
-
-  // Debounced local save (300 ms) — avoids writing on every keystroke.
-  useEffect(() => {
-    if (!hydrated || !state || isCorrupted) return;
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      saveState(state).catch(() => {});
-    }, 300);
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [hydrated, state, isCorrupted]);
-
-  // Reset the initial-sync gate whenever the signed-in user changes so we
-  // never push before re-reading that user's cloud data.
-  useEffect(() => {
-    initialSyncDoneRef.current = false;
   }, [userId]);
 
-  // Pull from cloud once when user logs in, reconcile by task-level timestamps.
+  // Push to cloud on every state change (debounced 800ms).
   useEffect(() => {
-    if (!hydrated || !userId || isCorrupted) return;
-    let active = true;
-    setSyncing(true);
-    (async () => {
-      try {
-        const remote = await pullRemoteState(userId);
-        const local = stateRef.current;
-        if (!active) return;
-        if (remote) {
-          if (!local) {
-            setState(remote);
-          } else {
-            const { merged, localChanged, remoteChanged } = mergeStates(local, remote);
-            if (localChanged) setState(merged);
-            if (remoteChanged) await pushRemoteState(userId, merged);
-          }
-        } else if (local) {
-          await pushRemoteState(userId, local);
-        }
-      } finally {
-        if (active) {
-          // Only allow background pushes after the cloud has been read and
-          // merged, so an empty local can never overwrite good cloud data.
-          initialSyncDoneRef.current = true;
-          setSyncing(false);
-        }
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [hydrated, userId, isCorrupted]);
-
-  // Debounced push-only sync (1.2 s) — pushes local changes without pulling.
-  useEffect(() => {
-    if (!hydrated || !userId || !state || isCorrupted) return;
-    if (!initialSyncDoneRef.current) return; // never push before first pull/merge
+    if (!hydrated || !userId || !state) return;
     if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
     pushTimerRef.current = setTimeout(() => {
       pushRemoteState(userId, stateRef.current ?? state).catch(() => {});
-    }, 1200);
+    }, 800);
     return () => {
       if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
     };
-  }, [state, hydrated, userId, isCorrupted]);
+  }, [state, hydrated, userId]);
 
-  // Manual full sync (pull + push).
-  const forceSync = useCallback(async () => {
-    if (!userId || !stateRef.current || isCorrupted) return;
-    setSyncing(true);
-    try {
-      const remote = await pullRemoteState(userId);
-      if (remote) {
-        const { merged, localChanged, remoteChanged } = mergeStates(stateRef.current, remote);
-        if (localChanged) setState(merged);
-        if (remoteChanged) await pushRemoteState(userId, merged);
-      } else {
-        await pushRemoteState(userId, stateRef.current);
-      }
-    } catch {
-      // Sync errors are non-fatal; data is safe locally.
-    } finally {
-      setSyncing(false);
-    }
-  }, [userId, isCorrupted]);
-
-  // Real-time synchronization
+  // Real-time subscription — instantly reflect changes from other devices.
   useEffect(() => {
-    if (!hydrated || !userId || isCorrupted) return;
+    if (!userId) return;
     let active = true;
-
     const channel = subscribeToRemoteState(userId, (remote) => {
       if (!active) return;
-      if (remote) {
-        setState((local) => {
-          if (!local) return remote;
-          const { merged, localChanged } = mergeStates(local, remote);
-          if (localChanged) return merged;
-          return local;
-        });
-      }
+      setState(remote);
     });
-
     return () => {
       active = false;
       channel?.unsubscribe();
     };
-  }, [hydrated, userId, isCorrupted]);
+  }, [userId]);
+
+  // Manual force sync — pull latest from cloud.
+  const forceSync = useCallback(async () => {
+    if (!userId) return;
+    setSyncing(true);
+    try {
+      const remote = await pullRemoteState(userId);
+      if (remote) setState(remote);
+    } catch {
+      // Sync errors are non-fatal.
+    } finally {
+      setSyncing(false);
+    }
+  }, [userId]);
 
   // Reminder scheduling — runs only when reminder-relevant fields change.
   const reminderSignature = useMemo(
@@ -316,15 +248,10 @@ export function useTasks(userId: string | null = null) {
           tasks.filter((t) => t.section === target.section && t.completed === target.completed),
         );
         const siblingIdx = siblings.findIndex((t) => t.id === id);
-        const swapIdx =
-          direction === 'up'
-            ? siblingIdx - 1
-            : siblingIdx + 1;
+        const swapIdx = direction === 'up' ? siblingIdx - 1 : siblingIdx + 1;
 
         if (swapIdx < 0 || swapIdx >= siblings.length) return tasks;
 
-        // Swap the two neighbours, then assign an explicit order to every
-        // sibling so items without a prior order can't jump past each other.
         const reordered = [...siblings];
         [reordered[siblingIdx], reordered[swapIdx]] = [reordered[swapIdx], reordered[siblingIdx]];
         const orderById = new Map(reordered.map((t, i) => [t.id, i * 1000]));
@@ -345,13 +272,12 @@ export function useTasks(userId: string | null = null) {
   }, []);
 
   const loadFromBackup = useCallback((backup: AppState) => {
-    // Force local state to win on next cloud sync by giving it a future timestamp.
-    setState({ ...backup, savedAt: Date.now() + 9_999_999 });
+    setState({ ...backup, savedAt: Date.now() });
   }, []);
 
   // Batch overdue auto-skip in a single state update.
   useEffect(() => {
-    if (!hydrated || !state || isCorrupted) return;
+    if (!hydrated || !state) return;
     const now = Date.now();
     const overdueIds = state.tasks
       .filter((t) => !t.completed && !t.deleted && t.recurring && isTaskOverdue(t, now))
@@ -365,11 +291,10 @@ export function useTasks(userId: string | null = null) {
         return [skipped, spawnNextOccurrence(task)];
       }),
     );
-  // Only run when hydration or corruption status changes, not on every state change.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, isCorrupted]);
+  }, [hydrated]);
 
-  // Memoize sorted task list — avoids re-sorting on every consumer render.
+  // Memoize sorted task list.
   const tasks = useMemo(() => sortTasks(state?.tasks ?? []), [state?.tasks]);
   const allDone = useMemo(
     () => tasks.length > 0 && tasks.every((t) => t.completed || t.deleted),
@@ -393,6 +318,5 @@ export function useTasks(userId: string | null = null) {
     markCelebrated,
     loadFromBackup,
     forceSync,
-    isCorrupted,
   };
 }
