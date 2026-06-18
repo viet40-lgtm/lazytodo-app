@@ -1,6 +1,6 @@
 import { memo, useCallback, useRef } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
+
 import {
   APP_COLORS,
   RADIUS,
@@ -90,13 +90,12 @@ function TaskRow({
           </Text>
         </Pressable>
 
-        <View style={styles.corner}>
-          <View style={styles.sortArrows}>
-            <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => onReorder(task.id, 'up')}>
-              <Text style={styles.arrowText}>↑</Text>
-            </Pressable>
-          </View>
-          {Platform.OS === 'web' ? (
+          <View style={styles.corner}>
+            <View style={styles.sortArrows}>
+              <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => onReorder(task.id, 'up')}>
+                <Text style={styles.arrowText}>↑</Text>
+              </Pressable>
+            </View>
             <Pressable
               style={styles.webDelete}
               onPress={() => onDelete(task.id)}
@@ -105,9 +104,8 @@ function TaskRow({
             >
               <Text style={styles.webDeleteText}>X</Text>
             </Pressable>
-          ) : null}
+          </View>
         </View>
-      </View>
 
       {hasMeta || hasRecurring(task) ? (
         <View style={styles.metaRow}>
@@ -118,23 +116,23 @@ function TaskRow({
               </View>
             ) : null}
             {repeat ? (
-              <View style={styles.metaChip}>
-                <Text style={styles.metaText}>↻ {repeat}</Text>
-              </View>
-            ) : null}
-          </Pressable>
-          {Platform.OS === 'web' && hasRecurring(task) ? (
-            <Pressable
-              style={styles.metaSkipBtn}
-              onPress={() => onSkip(task.id)}
-              accessibilityLabel={`Skip ${task.name}`}
-              hitSlop={6}
-            >
-              <Text style={styles.metaSkipText}>Skip</Text>
+                <View style={styles.metaChip}>
+                  <Text style={styles.metaText}>↻ {repeat}</Text>
+                </View>
+              ) : null}
             </Pressable>
-          ) : null}
-        </View>
-      ) : null}
+            {hasRecurring(task) ? (
+              <Pressable
+                style={styles.metaSkipBtn}
+                onPress={() => onSkip(task.id)}
+                accessibilityLabel={`Skip ${task.name}`}
+                hitSlop={6}
+              >
+                <Text style={styles.metaSkipText}>Skip</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
 
       <View style={styles.actionRow}>
         <View style={styles.timeBtnGroup}>
@@ -175,29 +173,7 @@ function TaskRow({
 }
 
 function TaskItemBase(props: TaskItemProps) {
-  const swipeRef = useRef<Swipeable>(null);
-
-  const renderRightActions = useCallback(() => (
-    <Pressable
-      style={styles.deleteAction}
-      onPress={() => {
-        swipeRef.current?.close();
-        props.onDelete(props.task.id);
-      }}
-    >
-      <Text style={styles.deleteText}>Delete</Text>
-    </Pressable>
-  ), [props.onDelete, props.task.id]);
-
-  if (Platform.OS === 'web') {
-    return <TaskRow {...props} />;
-  }
-
-  return (
-    <Swipeable ref={swipeRef} renderRightActions={renderRightActions} overshootRight={false}>
-      <TaskRow {...props} />
-    </Swipeable>
-  );
+  return <TaskRow {...props} />;
 }
 
 export const TaskItem = memo(TaskItemBase);
@@ -363,19 +339,5 @@ const styles = StyleSheet.create({
     color: APP_COLORS.delete,
     fontWeight: '700',
     marginTop: -2,
-  },
-  deleteAction: {
-    backgroundColor: APP_COLORS.delete,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingHorizontal: 20,
-    marginLeft: SPACING.sm,
-    borderRadius: RADIUS.md,
-    minWidth: 96,
-  },
-  deleteText: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: '700',
   },
 });

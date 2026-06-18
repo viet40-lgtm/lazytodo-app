@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AppState, Task, TaskSection } from '../types';
-import { pushRemoteState, pullRemoteState } from '../services/cloud';
+import { pushRemoteState, pullRemoteState, subscribeToRemoteState } from '../services/cloud';
 import { syncReminders } from '../services/reminders';
 import { loadState, saveState, DataCorruptionError, mergeStates } from '../services/storage';
 import { isTaskOverdue } from '../utils/recurring';
@@ -158,6 +158,29 @@ export function useTasks(userId: string | null = null) {
     }
   }, [userId, isCorrupted]);
 
+  // Real-time synchronization
+  useEffect(() => {
+    if (!hydrated || !userId || isCorrupted) return;
+    let active = true;
+
+    const channel = subscribeToRemoteState(userId, (remote) => {
+      if (!active) return;
+      if (remote) {
+        setState((local) => {
+          if (!local) return remote;
+          const { merged, localChanged } = mergeStates(local, remote);
+          if (localChanged) return merged;
+          return local;
+        });
+      }
+    });
+
+    return () => {
+      active = false;
+      channel?.unsubscribe();
+    };
+  }, [hydrated, userId, isCorrupted]);
+
   // Reminder scheduling — runs only when reminder-relevant fields change.
   const reminderSignature = useMemo(
     () =>
@@ -300,12 +323,15 @@ export function useTasks(userId: string | null = null) {
 
         if (swapIdx < 0 || swapIdx >= siblings.length) return tasks;
 
-        const swapId = siblings[swapIdx].id;
-        return tasks.map((t) => {
-          if (t.id === id) return { ...t, order: swapIdx * 1000, updatedAt: Date.now() };
-          if (t.id === swapId) return { ...t, order: siblingIdx * 1000, updatedAt: Date.now() };
-          return t;
-        });
+        // Swap the two neighbours, then assign an explicit order to every
+        // sibling so items without a prior order can't jump past each other.
+        const reordered = [...siblings];
+        [reordered[siblingIdx], reordered[swapIdx]] = [reordered[swapIdx], reordered[siblingIdx]];
+        const orderById = new Map(reordered.map((t, i) => [t.id, i * 1000]));
+        const now = Date.now();
+        return tasks.map((t) =>
+          orderById.has(t.id) ? { ...t, order: orderById.get(t.id) as number, updatedAt: now } : t,
+        );
       });
     },
     [updateTasks],

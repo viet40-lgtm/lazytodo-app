@@ -41,3 +41,30 @@ export async function pushRemoteState(userId: string, state: AppState): Promise<
   );
   return !error;
 }
+
+export function subscribeToRemoteState(
+  userId: string,
+  onUpdate: (state: AppState) => void
+) {
+  if (!supabase) return null;
+
+  const channel = supabase
+    .channel(`public:${TABLE}:${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: TABLE,
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        if (payload.new && (payload.new as any).state) {
+          onUpdate(normalizeState((payload.new as any).state));
+        }
+      }
+    )
+    .subscribe();
+
+  return channel;
+}

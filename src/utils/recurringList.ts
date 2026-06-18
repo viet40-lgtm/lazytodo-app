@@ -10,7 +10,7 @@ export function hasRecurring(task: { recurring?: Recurring | Recurring[] }): boo
 }
 
 const SECTION_REPEAT: Record<TaskSection, Recurring[]> = {
-  today: ['daily'],
+  today: [],
   daily: ['daily'],
   weekly: ['weekly', 'biweekly'],
   monthly: ['monthly'],
