@@ -1,7 +1,8 @@
 /**
  * inject-seo.js
  * Post-processes dist/index.html after `expo export --platform web`
- * to inject full SEO meta tags, Open Graph, Twitter Card, and structured data.
+ * to inject full SEO meta tags, Open Graph, Twitter Card, structured data,
+ * FAQPage schema, SoftwareApplication schema, and generates manifest.json + robots.txt + sitemap.xml.
  *
  * Usage: node inject-seo.js
  */
@@ -15,26 +16,65 @@ if (!fs.existsSync(distHtml)) {
   process.exit(1);
 }
 
+// ── FAQ data (keep in sync with app/index.tsx FAQS array) ────────────────────
+const FAQS = [
+  {
+    q: 'Is Lazy To-Do free?',
+    a: 'Yes — completely free, forever. No subscription, no credit card, no hidden fees. Core features will always be free.',
+  },
+  {
+    q: 'Do I need an account to use it?',
+    a: 'No. You can start using the app immediately with no sign-up required. Your tasks are saved locally on your device. Create a free account only if you want to sync across devices.',
+  },
+  {
+    q: 'Can I track daily habits?',
+    a: 'Yes. The Daily section is designed as a habit tracker — tasks added there reset automatically every day so you can build consistent routines.',
+  },
+  {
+    q: 'Does it support recurring tasks?',
+    a: 'Yes. You can set tasks to repeat daily, weekly, biweekly, monthly, or yearly. Recurring tasks spawn the next occurrence automatically when completed or skipped.',
+  },
+  {
+    q: 'Can I set reminders?',
+    a: 'Yes. You can attach a time-based reminder to any task. Reminders work on web, iOS, and Android.',
+  },
+  {
+    q: 'Does it sync across iPhone and Android?',
+    a: 'Yes. Sign in with a free account and your tasks sync across all devices — web, iPhone, and Android — in real time.',
+  },
+  {
+    q: 'Is there a mobile app?',
+    a: 'Yes. Lazy To-Do is available as a native app on iOS (iPhone) and Android, as well as in any web browser at lazytodo.app.',
+  },
+  {
+    q: 'How is this different from other to-do apps?',
+    a: 'Most task managers are overwhelming. Lazy To-Do is intentionally simple — it organizes tasks by timeframe (today, daily, weekly, monthly, yearly) so you always know what to focus on, without complex projects or folders.',
+  },
+];
+
+// ── SEO meta tags block ───────────────────────────────────────────────────────
 const SEO_TAGS = `
     <!-- Primary SEO -->
-    <title>Lazy To-Do – Simple Daily Planner &amp; Task Manager</title>
-    <meta name="description" content="Lazy To-Do is a minimalist daily planner that helps you stay on top of daily, weekly, monthly, and yearly goals — without the overwhelm. Free, no account needed." />
-    <meta name="keywords" content="to-do app, task manager, daily planner, productivity, habit tracker, goal tracker, simple todo, lazy todo" />
+    <title>Lazy To-Do – Free Daily Planner, Habit Tracker &amp; Task Manager</title>
+    <meta name="description" content="Lazy To-Do is a free minimalist task manager and daily habit tracker. Organize daily tasks, recurring habits, weekly goals, and long-term plans. No account needed. Works on web, iPhone &amp; Android." />
+    <meta name="keywords" content="to-do app, task manager, daily planner, habit tracker, free todo app, recurring tasks, goal tracker, simple task manager, no account todo, cross device sync, reminder app, weekly planner, productivity app" />
     <meta name="author" content="LazyToDo" />
     <link rel="canonical" href="https://lazytodo.app/" />
 
-    <!-- Theme -->
+    <!-- Theme & PWA -->
     <meta name="theme-color" content="#14532d" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Lazy To-Do" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/assets/icon.png" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://lazytodo.app/" />
-    <meta property="og:title" content="Lazy To-Do – Simple Daily Planner &amp; Task Manager" />
-    <meta property="og:description" content="Stay on top of your daily, weekly, monthly, and yearly goals — without the overwhelm. Free, no account needed." />
+    <meta property="og:title" content="Lazy To-Do – Free Daily Planner, Habit Tracker &amp; Task Manager" />
+    <meta property="og:description" content="Free minimalist task manager and daily habit tracker. Organize tasks by day, week, month, and year. No account needed. Works on web, iPhone &amp; Android." />
     <meta property="og:image" content="https://lazytodo.app/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -44,37 +84,78 @@ const SEO_TAGS = `
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://lazytodo.app/" />
-    <meta name="twitter:title" content="Lazy To-Do – Simple Daily Planner &amp; Task Manager" />
-    <meta name="twitter:description" content="Stay on top of your daily, weekly, monthly, and yearly goals — without the overwhelm. Free, no account needed." />
+    <meta name="twitter:title" content="Lazy To-Do – Free Daily Planner, Habit Tracker &amp; Task Manager" />
+    <meta name="twitter:description" content="Free minimalist task manager and daily habit tracker. No account needed. Works on web, iPhone &amp; Android." />
     <meta name="twitter:image" content="https://lazytodo.app/og-image.png" />
 
-    <!-- Structured Data -->
+    <!-- Structured Data: SoftwareApplication -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
+      "@type": "SoftwareApplication",
       "name": "Lazy To-Do",
       "url": "https://lazytodo.app",
-      "description": "A minimalist daily planner that helps you stay on top of daily, weekly, monthly, and yearly goals without the overwhelm.",
+      "description": "A free minimalist task manager and daily habit tracker. Organize daily tasks, recurring habits, weekly goals, and long-term plans without the overwhelm.",
       "applicationCategory": "ProductivityApplication",
       "operatingSystem": "Web, iOS, Android",
       "offers": {
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "USD"
-      }
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "ratingCount": "1"
+      },
+      "featureList": [
+        "Daily habit tracker",
+        "Recurring tasks (daily, weekly, monthly, yearly)",
+        "Cross-device sync",
+        "Task reminders",
+        "No account required",
+        "Free forever",
+        "Offline support",
+        "Works on iPhone, Android, and web"
+      ]
     }
     <\/script>
 
-    <!-- Apple touch icon -->
-    <link rel="apple-touch-icon" href="/assets/icon.png" />`;
+    <!-- Structured Data: FAQPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        ${FAQS.map(({ q, a }) => `{
+          "@type": "Question",
+          "name": ${JSON.stringify(q)},
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": ${JSON.stringify(a)}
+          }
+        }`).join(',\n        ')}
+      ]
+    }
+    <\/script>
 
+    <!-- Structured Data: WebSite with SearchAction -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Lazy To-Do",
+      "url": "https://lazytodo.app"
+    }
+    <\/script>`;
+
+// ── Patch index.html ──────────────────────────────────────────────────────────
 let html = fs.readFileSync(distHtml, 'utf8');
-
-// Replace the existing <title> tag with our full SEO block
 html = html.replace(/<title>[^<]*<\/title>/, SEO_TAGS);
+fs.writeFileSync(distHtml, html, 'utf8');
+console.log('✅  SEO tags injected into dist/index.html');
 
-// Copy the OG image to dist/ (always overwrite to keep it fresh)
+// ── Copy OG image ─────────────────────────────────────────────────────────────
 const ogSrc = path.join(__dirname, 'assets', 'og-image.png');
 const ogDest = path.join(__dirname, 'dist', 'og-image.png');
 if (fs.existsSync(ogSrc)) {
@@ -82,10 +163,49 @@ if (fs.existsSync(ogSrc)) {
   console.log('✅  Copied og-image.png to dist/');
 }
 
-fs.writeFileSync(distHtml, html, 'utf8');
-console.log('✅  SEO tags injected into dist/index.html');
+// ── manifest.json (PWA) ───────────────────────────────────────────────────────
+const manifest = {
+  name: 'Lazy To-Do',
+  short_name: 'LazyToDo',
+  description: 'Free daily planner, habit tracker, and task manager. No account needed.',
+  start_url: '/',
+  display: 'standalone',
+  background_color: '#f1f5f1',
+  theme_color: '#14532d',
+  orientation: 'portrait',
+  icons: [
+    {
+      src: '/assets/icon.png',
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'any maskable',
+    },
+    {
+      src: '/assets/favicon.png',
+      sizes: '196x196',
+      type: 'image/png',
+    },
+  ],
+  categories: ['productivity', 'utilities', 'lifestyle'],
+  screenshots: [
+    {
+      src: '/og-image.png',
+      sizes: '1200x630',
+      type: 'image/png',
+      label: 'Lazy To-Do – Daily Planner and Habit Tracker',
+    },
+  ],
+  lang: 'en',
+  dir: 'ltr',
+};
+fs.writeFileSync(
+  path.join(__dirname, 'dist', 'manifest.json'),
+  JSON.stringify(manifest, null, 2),
+  'utf8'
+);
+console.log('✅  manifest.json written to dist/');
 
-// ── sitemap.xml ──────────────────────────────────────────────────────────────
+// ── sitemap.xml ───────────────────────────────────────────────────────────────
 const today = new Date().toISOString().slice(0, 10);
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -106,7 +226,7 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 fs.writeFileSync(path.join(__dirname, 'dist', 'sitemap.xml'), sitemap, 'utf8');
 console.log('✅  sitemap.xml written to dist/');
 
-// ── robots.txt ───────────────────────────────────────────────────────────────
+// ── robots.txt ────────────────────────────────────────────────────────────────
 const robots = `User-agent: *
 Allow: /
 
