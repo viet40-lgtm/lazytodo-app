@@ -211,6 +211,16 @@ export function AuthModal({
                     </Text>
                   )}
                 </Pressable>
+
+                {cancellable ? (
+                  <Pressable
+                    style={({ pressed }) => [styles.skipBtn, pressed && styles.skipBtnPressed]}
+                    onPress={onClose}
+                    accessibilityLabel="Continue without account"
+                  >
+                    <Text style={styles.skipBtnText}>Continue without account →</Text>
+                  </Pressable>
+                ) : null}
               </>
             )}
           </ScrollView>
@@ -371,5 +381,18 @@ const styles = StyleSheet.create({
     color: APP_COLORS.fabText,
     fontSize: 25,
     fontWeight: '700',
+  },
+  skipBtn: {
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+  },
+  skipBtnPressed: {
+    opacity: 0.6,
+  },
+  skipBtnText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: APP_COLORS.textMuted,
+    textDecorationLine: 'underline',
   },
 });

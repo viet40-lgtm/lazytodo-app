@@ -247,8 +247,8 @@ export default function HomeScreen() {
         onClose={closeModal}
       />
       <AuthModal
-        visible={authOpen || (auth.configured && !auth.userId)}
-        cancellable={Boolean(auth.userId)}
+        visible={authOpen}
+        cancellable
         configured={auth.configured}
         email={auth.email}
         onSignIn={auth.signIn}
