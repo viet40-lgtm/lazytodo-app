@@ -29,7 +29,9 @@
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "title": "Lazy To-Do – Simple Daily Planner & Task Manager",
+      "description": "A minimalist daily planner for daily habits, weekly goals, and long-term dreams. Free, no account needed."
     },
     "plugins": [
       "expo-router",
