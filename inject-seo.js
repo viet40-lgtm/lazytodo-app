@@ -74,13 +74,43 @@ let html = fs.readFileSync(distHtml, 'utf8');
 // Replace the existing <title> tag with our full SEO block
 html = html.replace(/<title>[^<]*<\/title>/, SEO_TAGS);
 
-// Also copy the OG image if it exists in assets but not dist
+// Copy the OG image to dist/ (always overwrite to keep it fresh)
 const ogSrc = path.join(__dirname, 'assets', 'og-image.png');
 const ogDest = path.join(__dirname, 'dist', 'og-image.png');
-if (fs.existsSync(ogSrc) && !fs.existsSync(ogDest)) {
+if (fs.existsSync(ogSrc)) {
   fs.copyFileSync(ogSrc, ogDest);
   console.log('✅  Copied og-image.png to dist/');
 }
 
 fs.writeFileSync(distHtml, html, 'utf8');
 console.log('✅  SEO tags injected into dist/index.html');
+
+// ── sitemap.xml ──────────────────────────────────────────────────────────────
+const today = new Date().toISOString().slice(0, 10);
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://lazytodo.app/</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://lazytodo.app/app</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>
+`;
+fs.writeFileSync(path.join(__dirname, 'dist', 'sitemap.xml'), sitemap, 'utf8');
+console.log('✅  sitemap.xml written to dist/');
+
+// ── robots.txt ───────────────────────────────────────────────────────────────
+const robots = `User-agent: *
+Allow: /
+
+Sitemap: https://lazytodo.app/sitemap.xml
+`;
+fs.writeFileSync(path.join(__dirname, 'dist', 'robots.txt'), robots, 'utf8');
+console.log('✅  robots.txt written to dist/');
