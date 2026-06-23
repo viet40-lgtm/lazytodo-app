@@ -12,6 +12,7 @@ import { TaskList } from '../src/components/TaskList';
 import { TaskModal } from '../src/components/TaskModal';
 import { APP_COLORS, FAB_SIZE, RADIUS, SCREEN_PADDING, SPACING } from '../src/constants';
 import { getRandomQuote } from '../src/data/quotes';
+import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';
 import { useTasks } from '../src/hooks/useTasks';
 import type { AppState, Recurring, Task, TaskSection } from '../src/types';
@@ -30,6 +31,14 @@ export default function HomeScreen() {
   const [removeConfirmId, setRemoveConfirmId] = useState<string | null>(null);
 
   const auth = useAuth();
+  const { auth: authParam } = useLocalSearchParams<{ auth?: string }>();
+
+  // Auto-open auth modal if navigated here with ?auth=1 (e.g. from landing page Sign In).
+  useEffect(() => {
+    if (authParam === '1' && auth.configured) {
+      setAuthOpen(true);
+    }
+  }, [authParam, auth.configured]);
 
   const {
     hydrated,

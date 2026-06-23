@@ -88,7 +88,7 @@ export default function LandingPage() {
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.ghostBtn, pressed && styles.ghostBtnPressed]}
-              onPress={() => router.push('/app')}
+              onPress={() => router.push('/app?auth=1')}
               accessibilityRole="button"
               accessibilityLabel="Sign in to your account"
             >
