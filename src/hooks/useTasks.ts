@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AppState, Task } from '../types';
 import { pushRemoteState, pullRemoteState, subscribeToRemoteState } from '../services/cloud';
+import { loadState, saveState } from '../services/storage';
 import { syncReminders } from '../services/reminders';
 import { isTaskOverdue } from '../utils/recurring';
 import { isQueuedSuccessor } from '../utils/series';
@@ -45,40 +46,58 @@ export function useTasks(userId: string | null = null) {
   const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   stateRef.current = state;
 
-  // Load from cloud whenever userId changes.
+  // Load state whenever userId changes.
   useEffect(() => {
-    if (!userId) {
-      setState(null);
-      setHydrated(false);
-      return;
-    }
     let active = true;
     setHydrated(false);
-    setSyncing(true);
-    pullRemoteState(userId)
-      .then((remote) => {
-        if (!active) return;
-        setState(remote ?? { tasks: [], savedAt: Date.now() });
-        setHydrated(true);
-        setSyncing(false);
-      })
-      .catch(() => {
-        if (!active) return;
-        setState({ tasks: [], savedAt: Date.now() });
-        setHydrated(true);
-        setSyncing(false);
-      });
+
+    if (!userId) {
+      // Guest mode: load from local storage.
+      loadState()
+        .then((local) => {
+          if (!active) return;
+          setState(local);
+          setHydrated(true);
+        })
+        .catch(() => {
+          if (!active) return;
+          setState({ tasks: [], savedAt: Date.now() });
+          setHydrated(true);
+        });
+    } else {
+      // Logged-in mode: load from cloud.
+      setSyncing(true);
+      pullRemoteState(userId)
+        .then((remote) => {
+          if (!active) return;
+          setState(remote ?? { tasks: [], savedAt: Date.now() });
+          setHydrated(true);
+          setSyncing(false);
+        })
+        .catch(() => {
+          if (!active) return;
+          setState({ tasks: [], savedAt: Date.now() });
+          setHydrated(true);
+          setSyncing(false);
+        });
+    }
+
     return () => {
       active = false;
     };
   }, [userId]);
 
-  // Push to cloud on every state change (debounced 800ms).
+  // Persist state changes: cloud for logged-in users, local storage for guests.
   useEffect(() => {
-    if (!hydrated || !userId || !state) return;
+    if (!hydrated || !state) return;
     if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
     pushTimerRef.current = setTimeout(() => {
-      pushRemoteState(userId, stateRef.current ?? state).catch(() => {});
+      const currentState = stateRef.current ?? state;
+      if (userId) {
+        pushRemoteState(userId, currentState).catch(() => {});
+      } else {
+        saveState(currentState).catch(() => {});
+      }
     }, 800);
     return () => {
       if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
