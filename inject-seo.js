@@ -56,7 +56,7 @@ const FAQS = [
 const SEO_TAGS = `
     <!-- Primary SEO -->
     <title>Lazy To-Do – Free Daily Planner, Habit Tracker &amp; Task Manager</title>
-    <meta name="description" content="Lazy To-Do is a free minimalist task manager and daily habit tracker. Organize daily tasks, recurring habits, weekly goals, and long-term plans. No account needed. Works on web, iPhone &amp; Android." />
+    <meta name="description" content="Free minimalist task manager and daily habit tracker. Organize daily tasks, weekly goals, and long-term plans. No account needed. Works on iOS, Android &amp; web." />
     <meta name="keywords" content="to-do app, task manager, daily planner, habit tracker, free todo app, recurring tasks, goal tracker, simple task manager, no account todo, cross device sync, reminder app, weekly planner, productivity app" />
     <meta name="author" content="LazyToDo" />
     <link rel="canonical" href="https://lazytodo.app/" />
@@ -151,7 +151,11 @@ const SEO_TAGS = `
 
 // ── Patch index.html ──────────────────────────────────────────────────────────
 let html = fs.readFileSync(distHtml, 'utf8');
-html = html.replace(/<title>[^<]*<\/title>/, SEO_TAGS);
+// Remove existing title and description tags to prevent duplicates
+html = html.replace(/<title>[^<]*<\/title>/, '');
+html = html.replace(/<meta name="description"[^>]*>/g, '');
+// Inject our SEO tags at the end of the <head>
+html = html.replace('</head>', `\n${SEO_TAGS}\n</head>`);
 
 // Inject static HTML for crawlers that don't execute JS (like Bing)
 const staticHtml = `

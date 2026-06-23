@@ -133,7 +133,11 @@ export default function LandingPage() {
         {/* ── HERO ── */}
         <View style={styles.hero}>
           <Text style={styles.heroLogo}>LazyToDo.app</Text>
-          <Text style={styles.heroHeadline}>
+          <Text
+            style={styles.heroHeadline}
+            accessibilityRole="heading"
+            aria-level={1}
+          >
             The lazy way to{'\n'}stay on top of things.
           </Text>
           <Text style={styles.heroSub}>
