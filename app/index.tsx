@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -14,42 +14,104 @@ import { APP_COLORS, RADIUS, SCREEN_PADDING, SPACING, softShadow } from '../src/
 const FEATURES = [
   {
     icon: '☀️',
-    title: 'Today',
-    desc: 'One-off tasks for right now. Clear them and move on.',
+    title: 'Today\'s Tasks',
+    desc: 'Quick one-off tasks for right now. Add, check off, move on — clutter-free.',
     color: '#16a34a',
     bg: '#dcfce7',
   },
   {
     icon: '🔄',
-    title: 'Daily',
-    desc: 'Habits and routines that reset every day automatically.',
+    title: 'Daily Habit Tracker',
+    desc: 'Track daily habits and routines. They reset automatically every morning.',
     color: '#0891b2',
     bg: '#cffafe',
   },
   {
     icon: '📋',
-    title: 'Weekly & Monthly',
-    desc: 'Bigger goals that span the week or month.',
+    title: 'Weekly & Monthly Goals',
+    desc: 'Bigger tasks that span the week or month. Stay on track without micromanaging.',
     color: '#0284c7',
     bg: '#e0f2fe',
   },
   {
     icon: '⭐',
-    title: 'Yearly',
-    desc: 'Long-term goals. Always visible, never forgotten.',
+    title: 'Yearly Goals',
+    desc: 'Long-term dreams and ambitions. Always visible, never forgotten.',
     color: '#d97706',
     bg: '#fef3c7',
+  },
+  {
+    icon: '🔔',
+    title: 'Reminders',
+    desc: 'Set time-based reminders for any task. Never miss what matters.',
+    color: '#7c3aed',
+    bg: '#ede9fe',
+  },
+  {
+    icon: '☁️',
+    title: 'Cross-Device Sync',
+    desc: 'Sign in free to sync your tasks across iPhone, Android, and web instantly.',
+    color: '#0d9488',
+    bg: '#ccfbf1',
   },
 ];
 
 const STEPS = [
-  { num: '1', title: 'Add your tasks', desc: 'Drop in anything — a habit, a goal, a quick task.' },
-  { num: '2', title: 'Check them off', desc: 'Satisfying taps. Recurring tasks reset themselves.' },
-  { num: '3', title: 'Sync everywhere', desc: 'Sign in to sync across all your devices instantly.' },
+  {
+    num: '1',
+    title: 'Add your tasks — no sign-up needed',
+    desc: 'Open the app and start adding tasks immediately. No account, no credit card, no friction.',
+  },
+  {
+    num: '2',
+    title: 'Check them off',
+    desc: 'Tap to complete. Recurring tasks and daily habits reset themselves automatically.',
+  },
+  {
+    num: '3',
+    title: 'Sync across all your devices',
+    desc: 'Create a free account to sync your tasks across iPhone, Android, and web in real time.',
+  },
+];
+
+const FAQS = [
+  {
+    q: 'Is Lazy To-Do free?',
+    a: 'Yes — completely free, forever. No subscription, no credit card, no hidden fees. Core features will always be free.',
+  },
+  {
+    q: 'Do I need an account to use it?',
+    a: 'No. You can start using the app immediately with no sign-up required. Your tasks are saved locally on your device. Create a free account only if you want to sync across devices.',
+  },
+  {
+    q: 'Can I track daily habits?',
+    a: 'Yes. The Daily section is designed as a habit tracker — tasks added there reset automatically every day so you can build consistent routines.',
+  },
+  {
+    q: 'Does it support recurring tasks?',
+    a: 'Yes. You can set tasks to repeat daily, weekly, biweekly, monthly, or yearly. Recurring tasks spawn the next occurrence automatically when completed or skipped.',
+  },
+  {
+    q: 'Can I set reminders?',
+    a: 'Yes. You can attach a time-based reminder to any task. Reminders work on web, iOS, and Android.',
+  },
+  {
+    q: 'Does it sync across iPhone and Android?',
+    a: 'Yes. Sign in with a free account and your tasks sync across all devices — web, iPhone, and Android — in real time.',
+  },
+  {
+    q: 'Is there a mobile app?',
+    a: 'Yes. Lazy To-Do is available as a native app on iOS (iPhone) and Android, as well as in any web browser at lazytodo.app.',
+  },
+  {
+    q: 'How is this different from other to-do apps?',
+    a: 'Most task managers are overwhelming. Lazy To-Do is intentionally simple — it organizes tasks by timeframe (today, daily, weekly, monthly, yearly) so you always know what to focus on, without complex projects or folders.',
+  },
 ];
 
 export default function LandingPage() {
   const router = useRouter();
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   // Native builds skip the landing page and go straight to the app.
   useEffect(() => {
@@ -75,7 +137,7 @@ export default function LandingPage() {
             The lazy way to{'\n'}stay on top of things.
           </Text>
           <Text style={styles.heroSub}>
-            A minimalist daily planner for daily habits, weekly goals, and long-term dreams — all in one place. No overwhelm, no clutter.
+            A free, minimalist task manager and daily habit tracker. Organize your daily tasks, weekly goals, and long-term plans — all in one place. No account needed to get started.
           </Text>
           <View style={styles.heroCtas}>
             <Pressable
@@ -95,13 +157,13 @@ export default function LandingPage() {
               <Text style={styles.ghostBtnText}>Sign In</Text>
             </Pressable>
           </View>
-          <Text style={styles.heroNote}>No account required to get started.</Text>
+          <Text style={styles.heroNote}>✓ Free forever &nbsp;·&nbsp; ✓ No sign-up required &nbsp;·&nbsp; ✓ Works offline</Text>
         </View>
 
         {/* ── FEATURES ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>PLAN AT EVERY SCALE</Text>
-          <Text style={styles.sectionTitle}>One app for every timeframe</Text>
+          <Text style={styles.sectionLabel}>FEATURES</Text>
+          <Text style={styles.sectionTitle}>Everything you need, nothing you don't</Text>
           <View style={styles.featureGrid}>
             {FEATURES.map((f) => (
               <View key={f.title} style={[styles.featureCard, { borderTopColor: f.color }]}>
@@ -135,11 +197,39 @@ export default function LandingPage() {
           </View>
         </View>
 
+        {/* ── FAQ ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>FAQ</Text>
+          <Text style={styles.sectionTitle}>Frequently asked questions</Text>
+          <View style={styles.faqList}>
+            {FAQS.map((item, i) => {
+              const isOpen = openFaq === i;
+              return (
+                <Pressable
+                  key={i}
+                  style={[styles.faqItem, isOpen && styles.faqItemOpen]}
+                  onPress={() => setOpenFaq(isOpen ? null : i)}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.q}
+                >
+                  <View style={styles.faqHeader}>
+                    <Text style={styles.faqQ}>{item.q}</Text>
+                    <Text style={[styles.faqChevron, isOpen && styles.faqChevronOpen]}>›</Text>
+                  </View>
+                  {isOpen && (
+                    <Text style={styles.faqA}>{item.a}</Text>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
         {/* ── BOTTOM CTA ── */}
         <View style={styles.bottomCta}>
           <Text style={styles.bottomCtaTitle}>Ready to get lazy about it?</Text>
           <Text style={styles.bottomCtaSub}>
-            Start in seconds. No sign-up required.
+            Free task manager. No account required. Works on web, iPhone & Android.
           </Text>
           <Pressable
             style={({ pressed }) => [styles.primaryBtn, styles.bottomCtaBtn, pressed && styles.primaryBtnPressed]}
@@ -155,7 +245,7 @@ export default function LandingPage() {
         <View style={styles.footer}>
           <Text style={styles.footerLogo}>LazyToDo.app</Text>
           <Text style={styles.footerText}>
-            Free forever. Available on Web, iOS & Android.
+            Free forever. Available on Web, iOS & Android. No account required.
           </Text>
         </View>
       </ScrollView>
@@ -204,12 +294,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   heroSub: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '400',
     color: APP_COLORS.headerMuted,
     textAlign: 'center',
-    lineHeight: 28,
-    maxWidth: 480,
+    lineHeight: 26,
+    maxWidth: 500,
     marginBottom: SPACING.xxl,
   },
   heroCtas: {
@@ -254,8 +344,9 @@ const styles = StyleSheet.create({
   },
   heroNote: {
     fontSize: 13,
-    color: 'rgba(187, 247, 208, 0.6)',
+    color: 'rgba(187, 247, 208, 0.7)',
     fontWeight: '500',
+    textAlign: 'center',
   },
 
   // ── Section ──
@@ -272,7 +363,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sectionTitle: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '800',
     color: APP_COLORS.text,
     textAlign: 'center',
@@ -309,13 +400,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
   },
   featureTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
   },
   featureDesc: {
-    fontSize: 14,
+    fontSize: 13,
     color: APP_COLORS.textMuted,
-    lineHeight: 20,
+    lineHeight: 19,
   },
 
   // ── How it works ──
@@ -363,15 +454,62 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.xs,
   },
   stepTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#ffffff',
     marginBottom: 4,
   },
   stepDesc: {
-    fontSize: 15,
+    fontSize: 14,
     color: APP_COLORS.headerMuted,
+    lineHeight: 21,
+  },
+
+  // ── FAQ ──
+  faqList: {
+    gap: SPACING.sm,
+  },
+  faqItem: {
+    backgroundColor: APP_COLORS.surface,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md + 2,
+    borderWidth: 1,
+    borderColor: APP_COLORS.border,
+    ...softShadow(0.04, 6, 2),
+  },
+  faqItemOpen: {
+    borderColor: APP_COLORS.green,
+    ...softShadow(0.08, 10, 4),
+  },
+  faqHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.md,
+  },
+  faqQ: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: APP_COLORS.text,
+    flex: 1,
     lineHeight: 22,
+  },
+  faqChevron: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: APP_COLORS.textMuted,
+    transform: [{ rotate: '90deg' }],
+  },
+  faqChevronOpen: {
+    transform: [{ rotate: '-90deg' }],
+    color: APP_COLORS.primary,
+  },
+  faqA: {
+    fontSize: 14,
+    color: APP_COLORS.textMuted,
+    lineHeight: 22,
+    marginTop: SPACING.sm,
   },
 
   // ── Bottom CTA ──
@@ -389,10 +527,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   bottomCtaSub: {
-    fontSize: 16,
+    fontSize: 15,
     color: APP_COLORS.textMuted,
     textAlign: 'center',
     marginBottom: SPACING.sm,
+    lineHeight: 22,
   },
   bottomCtaBtn: {
     paddingHorizontal: SPACING.xxl * 1.5,
@@ -417,5 +556,6 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 13,
     color: APP_COLORS.textSubtle,
+    textAlign: 'center',
   },
 });
