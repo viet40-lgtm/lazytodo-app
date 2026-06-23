@@ -152,8 +152,48 @@ const SEO_TAGS = `
 // ── Patch index.html ──────────────────────────────────────────────────────────
 let html = fs.readFileSync(distHtml, 'utf8');
 html = html.replace(/<title>[^<]*<\/title>/, SEO_TAGS);
+
+// Inject static HTML for crawlers that don't execute JS (like Bing)
+const staticHtml = `
+  <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; max-width: 800px; margin: 0 auto; color: #1f2937;">
+    <h1>Lazy To-Do – Free Daily Planner, Habit Tracker &amp; Task Manager</h1>
+    <h2>The lazy way to stay on top of things.</h2>
+    <p>A free, minimalist task manager and daily habit tracker. Organize your daily tasks, weekly goals, and long-term plans — all in one place. No account needed to get started.</p>
+    <ul>
+      <li>Free forever</li>
+      <li>No sign-up required</li>
+      <li>Works offline</li>
+    </ul>
+
+    <h3>Features</h3>
+    <ul>
+      <li><strong>Today's Tasks:</strong> Quick one-off tasks for right now. Add, check off, move on — clutter-free.</li>
+      <li><strong>Daily Habit Tracker:</strong> Track daily habits and routines. They reset automatically every morning.</li>
+      <li><strong>Weekly &amp; Monthly Goals:</strong> Bigger tasks that span the week or month. Stay on track without micromanaging.</li>
+      <li><strong>Yearly Goals:</strong> Long-term dreams and ambitions. Always visible, never forgotten.</li>
+      <li><strong>Reminders:</strong> Set time-based reminders for any task. Never miss what matters.</li>
+      <li><strong>Cross-Device Sync:</strong> Sign in free to sync your tasks across iPhone, Android, and web instantly.</li>
+    </ul>
+
+    <h3>How it works</h3>
+    <ol>
+      <li><strong>Add your tasks — no sign-up needed:</strong> Open the app and start adding tasks immediately. No account, no credit card, no friction.</li>
+      <li><strong>Check them off:</strong> Tap to complete. Recurring tasks and daily habits reset themselves automatically.</li>
+      <li><strong>Sync across all your devices:</strong> Create a free account to sync your tasks across iPhone, Android, and web in real time.</li>
+    </ol>
+
+    <h3>FAQ</h3>
+    <dl>
+      ${FAQS.map(f => `<dt style="margin-top: 16px;"><strong>${f.q}</strong></dt><dd style="margin-left: 0; margin-top: 4px; color: #4b5563;">${f.a}</dd>`).join('\n      ')}
+    </dl>
+    <a href="/app" style="display: inline-block; background: #16a34a; color: white; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: bold; margin-top: 32px;">Get Started Free</a>
+  </div>
+`;
+
+html = html.replace('<div id="root"></div>', `<div id="root">${staticHtml}</div>`);
+
 fs.writeFileSync(distHtml, html, 'utf8');
-console.log('✅  SEO tags injected into dist/index.html');
+console.log('✅  SEO tags and static HTML injected into dist/index.html');
 
 // ── Copy OG image ─────────────────────────────────────────────────────────────
 const ogSrc = path.join(__dirname, 'assets', 'og-image.png');
