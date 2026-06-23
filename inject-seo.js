@@ -234,3 +234,13 @@ Sitemap: https://lazytodo.app/sitemap.xml
 `;
 fs.writeFileSync(path.join(__dirname, 'dist', 'robots.txt'), robots, 'utf8');
 console.log('✅  robots.txt written to dist/');
+
+// ── BingSiteAuth.xml (Bing Webmaster Tools verification) ─────────────────────
+const bingSrc = path.join(__dirname, 'BingSiteAuth.xml');
+const bingDest = path.join(__dirname, 'dist', 'BingSiteAuth.xml');
+if (fs.existsSync(bingSrc)) {
+  fs.copyFileSync(bingSrc, bingDest);
+  console.log('✅  BingSiteAuth.xml copied to dist/');
+} else {
+  console.warn('⚠️   BingSiteAuth.xml not found in project root — skipping.');
+}
