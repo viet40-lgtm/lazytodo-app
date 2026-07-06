@@ -139,7 +139,17 @@ export function useTasks(userId: string | null = null) {
           const existing = prev.tasks.find((item) => item.id === task.id);
           return existing?.notificationId !== task.notificationId;
         });
-        return changed ? { ...prev, tasks } : prev;
+        return changed
+          ? {
+              ...prev,
+              tasks: prev.tasks.map((t) => {
+                const synced = tasks.find((s) => s.id === t.id);
+                return synced && synced.notificationId !== t.notificationId
+                  ? { ...t, notificationId: synced.notificationId }
+                  : t;
+              }),
+            }
+          : prev;
       });
     });
   }, [hydrated, reminderSignature]);
