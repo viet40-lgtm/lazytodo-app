@@ -83,30 +83,21 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
   };
 
   const handleToggle = (id: string) => {
+    // Only update local state — Save button commits to cloud.
     setSubtasks((prev) => {
       const target = prev.find(st => st.id === id);
       if (!target) return prev;
-      
       const isCompleting = !target.completed;
       const updated = {
         ...target,
         completed: isCompleting,
         completedAt: isCompleting ? Date.now() : undefined,
       };
-
       const others = prev.filter(st => st.id !== id);
-      let result;
-      if (isCompleting) {
-        result = [...others, updated];
-      } else {
-        const active = others.filter(st => !st.completed);
-        const completed = others.filter(st => st.completed);
-        result = [...active, updated, ...completed];
-      }
-      if (task) {
-        onSave(task.id, result.length > 0 ? result : []);
-      }
-      return result;
+      if (isCompleting) return [...others, updated];
+      const active = others.filter(st => !st.completed);
+      const completed = others.filter(st => st.completed);
+      return [...active, updated, ...completed];
     });
   };
 
@@ -120,15 +111,11 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
   };
 
   const handleLogTime = (id: string, mins: number) => {
-    setSubtasks((prev) => {
-      const updated = prev.map(st => 
-        st.id === id ? { ...st, timeSpent: (st.timeSpent || 0) + mins } : st
-      );
-      if (task) {
-        onSave(task.id, updated.length > 0 ? updated : []);
-      }
-      return updated;
-    });
+    // Only update local state — Save button commits to cloud.
+    // onLogTime still fires immediately so the parent task timer advances.
+    setSubtasks((prev) =>
+      prev.map(st => st.id === id ? { ...st, timeSpent: (st.timeSpent || 0) + mins } : st)
+    );
     if (task && onLogTime) {
       onLogTime(task.id, mins);
     }
@@ -159,13 +146,7 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
               >
                 <Text style={[styles.headerSaveText, hasChanges && { color: APP_COLORS.delete }]}>Save</Text>
               </Pressable>
-              <Pressable hitSlop={12} onPress={() => {
-                // Auto-save any unsaved changes when the user hits X
-                if (task && hasChanges) {
-                  onSave(task.id, subtasks.length > 0 ? subtasks : []);
-                }
-                onClose();
-              }} style={styles.closeBtn}>
+              <Pressable hitSlop={12} onPress={onClose} style={styles.closeBtn}>
                 <Text style={styles.closeText}>X</Text>
               </Pressable>
             </View>
