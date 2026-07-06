@@ -51,6 +51,7 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
   
   const hasChanges = subtasks.length !== normalizedInitial.length || subtasks.some((st, i) => {
     const init = normalizedInitial[i];
+    // M2: also detect reordering by checking position (id mismatch at same index)
     return st.id !== init.id ||
            st.name !== init.name ||
            st.completed !== init.completed ||

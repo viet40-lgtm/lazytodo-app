@@ -33,7 +33,9 @@ export function monthRange(now = new Date()): { start: number; end: number } {
 
 export function yearRange(now = new Date()): { start: number; end: number } {
   const start = new Date(now.getFullYear(), 0, 1).getTime();
-  return { start, end: endOfDay(now).getTime() };
+  // M4: end at Dec 31 23:59:59 so the full year is always visible
+  const end = endOfDay(new Date(now.getFullYear(), 11, 31)).getTime();
+  return { start, end };
 }
 
 export function dayRange(now = new Date()): { start: number; end: number } {

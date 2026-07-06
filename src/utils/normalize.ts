@@ -89,30 +89,34 @@ function normalizeTask(raw: unknown): Task | null {
   // detection logic (timeLogs.length > 0) works after a cloud round-trip.
   const shouldIncludeTimeLogs = timeLogs.length > 0 || !!recurring;
 
+  // Cache expensive repeated calls (M5)
+  const completedAt = parseTimestamp(task.completedAt);
+  const showAfter = parseTimestamp(task.showAfter);
+  const updatedAt = parseTimestamp(task.updatedAt);
+  const subtasks = normalizeSubtasks(task.subtasks); // H1: call once only
+
   return {
     id: task.id,
     name: task.name.trim(),
     section,
     spentMinutes,
     completed: Boolean(task.completed),
-    ...(parseTimestamp(task.completedAt) !== undefined
-      ? { completedAt: parseTimestamp(task.completedAt) }
-      : {}),
+    ...(completedAt !== undefined ? { completedAt } : {}),
     ...(typeof task.reminder === 'string' && task.reminder ? { reminder: task.reminder } : {}),
     ...(recurring ? { recurring } : {}),
     ...(shouldIncludeTimeLogs ? { timeLogs } : {}),
     ...(typeof task.notificationId === 'string' ? { notificationId: task.notificationId } : {}),
-    ...(parseTimestamp(task.showAfter) !== undefined ? { showAfter: parseTimestamp(task.showAfter) } : {}),
+    ...(showAfter !== undefined ? { showAfter } : {}),
     ...(typeof task.order === 'number' ? { order: task.order } : {}),
     ...(task.deleted === true ? { deleted: true } : {}),
-    ...(parseTimestamp(task.updatedAt) !== undefined ? { updatedAt: parseTimestamp(task.updatedAt) } : {}),
+    ...(updatedAt !== undefined ? { updatedAt } : {}),
     ...(typeof task.seriesId === 'string' ? { seriesId: task.seriesId } : {}),
     ...(typeof task.seriesTotalMinutes === 'number' && task.seriesTotalMinutes >= 0
       ? { seriesTotalMinutes: Math.round(task.seriesTotalMinutes) }
       : {}),
     ...(task.persistent === true ? { persistent: true } : {}),
     ...(task.reminderOnly === true ? { reminderOnly: true } : {}),
-    ...(normalizeSubtasks(task.subtasks) ? { subtasks: normalizeSubtasks(task.subtasks) } : {}),
+    ...(subtasks ? { subtasks } : {}),
     createdAt,
   };
 }
@@ -129,6 +133,7 @@ export function normalizeState(raw: unknown): AppState {
     ...(typeof data.lastCelebrationDate === 'string'
       ? { lastCelebrationDate: data.lastCelebrationDate }
       : {}),
-    savedAt: parseTimestamp(data.savedAt) ?? Date.now(),
+    // L4: missing savedAt → use 0 (oldest) so local state always wins the timestamp guard
+    savedAt: parseTimestamp(data.savedAt) ?? 0,
   };
 }

@@ -97,10 +97,26 @@ function TaskRow({
   onManageSubtasks,
 }: TaskItemProps) {
   // Hide the recurring chip when the stats row is visible — it already shows the periods.
-  const showsStatsRow = hasRecurring(task) && (task.persistent || (task.timeLogs?.length ?? 0) > 0);
+  const showsStatsRow = hasRecurring(task) && (task.persistent || task.timeLogs !== undefined);
   const repeat = showsStatsRow ? null : recurringLabel(task.recurring);
   const done = task.completed;
   const hasMeta = Boolean(task.reminder || repeat);
+
+  // M1 + L3: compute display time before JSX to avoid IIFE and double-call
+  const subtaskTotal = task.subtasks && task.subtasks.length > 0
+    ? task.subtasks.reduce((sum, st) => sum + (st.timeSpent || 0), 0)
+    : null;
+  const sectionMins = (hasRecurring(task) && !task.persistent)
+    ? minutesForSection(task, listSection)
+    : 0;
+  const displayMins = subtaskTotal !== null ? subtaskTotal
+    : hasRecurring(task) && !task.persistent ? sectionMins
+    : task.spentMinutes;
+  const displayTime = subtaskTotal !== null
+    ? formatDuration(displayMins)
+    : hasRecurring(task) && !task.persistent
+      ? sectionMins > 0 ? formatDuration(sectionMins) : '—'
+      : formatDuration(displayMins);
 
   return (
     <View style={[styles.card, { borderLeftColor: accentColor }, done && styles.cardDone]}>
@@ -207,24 +223,7 @@ function TaskRow({
           </View>
           <View style={{ flex: 1, alignItems: 'center' }}>
             <View style={styles.spentChip}>
-              {(() => {
-                // If the task has sub-tasks, show the sum of their timeSpent
-                // so the number always matches what the sub-task modal shows.
-                const subtaskTotal = task.subtasks && task.subtasks.length > 0
-                  ? task.subtasks.reduce((sum, st) => sum + (st.timeSpent || 0), 0)
-                  : null;
-                const displayMins = subtaskTotal !== null ? subtaskTotal
-                  : hasRecurring(task) && !task.persistent
-                    ? minutesForSection(task, listSection) || 0
-                    : task.spentMinutes;
-                return (
-                  <Text style={styles.spentText}>
-                    {subtaskTotal !== null || !hasRecurring(task) || task.persistent
-                      ? formatDuration(displayMins)
-                      : displayMins > 0 ? formatDuration(displayMins) : '—'}
-                  </Text>
-                );
-              })()}
+              <Text style={styles.spentText}>{displayTime}</Text>
             </View>
           </View>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>

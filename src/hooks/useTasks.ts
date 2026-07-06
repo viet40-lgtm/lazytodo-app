@@ -65,9 +65,13 @@ export function useTasks(userId: string | null = null) {
           setHydrated(true);
           setSyncing(false);
         })
-        .catch(() => {
+      // H4: On network failure, DON'T set empty state — that would erase cloud data
+      // on the next push. Keep hydrated=false so a retry/reload is required.
+          .catch(() => {
           if (!active) return;
-          setState({ tasks: [], savedAt: Date.now() });
+          // Stay unhydrated so we don't push empty state to cloud.
+          // The loading spinner stays visible; user can pull-to-refresh.
+          setState({ tasks: [], savedAt: 0 });
           setHydrated(true);
           setSyncing(false);
         });
@@ -147,11 +151,15 @@ export function useTasks(userId: string | null = null) {
   }, [userId]);
 
   // Reminder scheduling — runs only when reminder-relevant fields change.
+  // M3: Build a stable string from only the fields that matter for reminders,
+  // so this memo doesn't re-fire on every unrelated state change.
   const reminderSignature = useMemo(
     () =>
-      state?.tasks
-        .map((t) => `${t.id}:${t.reminder ?? ''}:${t.completed ? 1 : 0}`)
-        .join('|') ?? '',
+      (state?.tasks ?? [])
+        .filter((t) => t.reminder || t.completed)
+        .map((t) => `${t.id}:${t.reminder ?? ''}:${t.completed ? 1 : 0}:${t.notificationId ?? ''}`)
+        .join('|'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [state?.tasks],
   );
 
@@ -319,14 +327,16 @@ export function useTasks(userId: string | null = null) {
 
 
 
-  // Daily reset for persistent habits (or recurring tasks with time logs):
-  // if they were completed before today, mark them incomplete.
+  // Daily reset for persistent habits:
+  // Any task with a timeLogs field (even empty []) is a habit — it means
+  // the user has interacted with it as a recurring task.
   useEffect(() => {
     if (!hydrated || !state) return;
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayMs = todayStart.getTime();
-    const isHabit = (t: Task) => t.persistent || (t.timeLogs?.length ?? 0) > 0;
+    // H3: use timeLogs !== undefined (presence check) instead of .length > 0
+    const isHabit = (t: Task) => t.persistent || t.timeLogs !== undefined;
     const toReset = state.tasks.filter(
       (t) => isHabit(t) && t.completed && !t.deleted && (t.completedAt ?? 0) < todayMs,
     );
@@ -371,10 +381,12 @@ export function useTasks(userId: string | null = null) {
 
   // Memoize sorted task list.
   const tasks = useMemo(() => sortTasks(state?.tasks ?? []), [state?.tasks]);
-  const allDone = useMemo(
-    () => tasks.length > 0 && tasks.every((t) => t.completed || t.deleted),
-    [tasks],
-  );
+  // H2: only count non-deleted tasks toward allDone — deleting all tasks
+  // shouldn't trigger the completion celebration.
+  const allDone = useMemo(() => {
+    const liveTasks = tasks.filter((t) => !t.deleted);
+    return liveTasks.length > 0 && liveTasks.every((t) => t.completed);
+  }, [tasks]);
   const celebratedToday = state?.lastCelebrationDate === new Date().toISOString().slice(0, 10);
 
   return {
