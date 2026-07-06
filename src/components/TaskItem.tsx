@@ -102,15 +102,22 @@ function TaskRow({
   const done = task.completed;
   const hasMeta = Boolean(task.reminder || repeat);
 
-  // Center timer always reads spentMinutes — updated by both main-card +5m
-  // and sub-task modal +5m (via onLogTime). Sub-task timeSpent values are
-  // per-subtask detail only, shown inside the sub-task modal.
+  // Center timer source:
+  // - Persistent habits → sum of ALL timeLogs entries (same source as D/W/M/Y stats,
+  //   just without a date filter). This guarantees Y: can never exceed the center total.
+  // - Non-persistent recurring → this period's timeLogs only (minutesForSection)
+  // - Regular tasks → spentMinutes
+  const allTimeLogMins = (task.persistent && task.timeLogs?.length)
+    ? task.timeLogs.reduce((sum, log) => sum + log.minutes, 0)
+    : null;
   const sectionMins = (hasRecurring(task) && !task.persistent)
     ? minutesForSection(task, listSection)
     : 0;
-  const displayTime = hasRecurring(task) && !task.persistent
-    ? sectionMins > 0 ? formatDuration(sectionMins) : '—'
-    : formatDuration(task.spentMinutes);
+  const displayTime = task.persistent && allTimeLogMins !== null
+    ? formatDuration(allTimeLogMins)
+    : hasRecurring(task) && !task.persistent
+      ? sectionMins > 0 ? formatDuration(sectionMins) : '—'
+      : formatDuration(task.spentMinutes);
 
   return (
     <View style={[styles.card, { borderLeftColor: accentColor }, done && styles.cardDone]}>
