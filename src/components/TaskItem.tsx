@@ -207,15 +207,24 @@ function TaskRow({
           </View>
           <View style={{ flex: 1, alignItems: 'center' }}>
             <View style={styles.spentChip}>
-              {hasRecurring(task) && !task.persistent ? (
-                <Text style={styles.spentText} numberOfLines={2}>
-                  {minutesForSection(task, listSection) > 0
-                    ? formatDuration(minutesForSection(task, listSection))
-                    : '—'}
-                </Text>
-              ) : (
-                <Text style={styles.spentText}>{formatDuration(task.spentMinutes)}</Text>
-              )}
+              {(() => {
+                // If the task has sub-tasks, show the sum of their timeSpent
+                // so the number always matches what the sub-task modal shows.
+                const subtaskTotal = task.subtasks && task.subtasks.length > 0
+                  ? task.subtasks.reduce((sum, st) => sum + (st.timeSpent || 0), 0)
+                  : null;
+                const displayMins = subtaskTotal !== null ? subtaskTotal
+                  : hasRecurring(task) && !task.persistent
+                    ? minutesForSection(task, listSection) || 0
+                    : task.spentMinutes;
+                return (
+                  <Text style={styles.spentText}>
+                    {subtaskTotal !== null || !hasRecurring(task) || task.persistent
+                      ? formatDuration(displayMins)
+                      : displayMins > 0 ? formatDuration(displayMins) : '—'}
+                  </Text>
+                );
+              })()}
             </View>
           </View>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
