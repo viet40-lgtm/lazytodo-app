@@ -241,6 +241,9 @@ export function useTasks(userId: string | null = null) {
         const target = tasks.find((t) => t.id === id);
         if (!target) return tasks;
 
+        // Persistent habits can't be skipped — they live forever.
+        if (target.persistent) return tasks;
+
         const remaining = tasks.map((t) =>
           t.id === id ? { ...t, deleted: true, updatedAt: Date.now() } : t,
         );
@@ -294,12 +297,43 @@ export function useTasks(userId: string | null = null) {
     setState({ ...backup, savedAt: Date.now() });
   }, []);
 
+  // Daily reset for persistent habits (or recurring tasks with time logs):
+  // if they were completed before today, mark them incomplete.
+  useEffect(() => {
+    if (!hydrated || !state) return;
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayMs = todayStart.getTime();
+    const isHabit = (t: Task) => t.persistent || (t.timeLogs?.length ?? 0) > 0;
+    const toReset = state.tasks.filter(
+      (t) => isHabit(t) && t.completed && !t.deleted && (t.completedAt ?? 0) < todayMs,
+    );
+    if (toReset.length === 0) return;
+    updateTasks((tasks: Task[]) =>
+      tasks.map((t) =>
+        isHabit(t) && t.completed && !t.deleted && (t.completedAt ?? 0) < todayMs
+          ? { ...t, completed: false, completedAt: undefined, updatedAt: Date.now() }
+          : t,
+      ),
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
+
   // Batch overdue auto-skip in a single state update.
   useEffect(() => {
     if (!hydrated || !state) return;
     const now = Date.now();
+    // Never auto-skip persistent habits or tasks that already have time logged —
+    // they are treated as permanent habits and must be manually managed.
     const overdueIds = state.tasks
-      .filter((t) => !t.completed && !t.deleted && t.recurring && isTaskOverdue(t, now))
+      .filter((t) =>
+        !t.completed &&
+        !t.deleted &&
+        !t.persistent &&
+        !(t.timeLogs?.length) &&
+        t.recurring &&
+        isTaskOverdue(t, now)
+      )
       .map((t) => t.id);
     if (overdueIds.length === 0) return;
     updateTasks((tasks: Task[]) =>

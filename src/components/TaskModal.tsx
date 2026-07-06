@@ -33,6 +33,8 @@ interface TaskModalProps {
     section: TaskSection;
     reminder?: string;
     recurring?: Recurring[];
+    persistent?: boolean;
+    reminderOnly?: boolean;
   }) => void;
   onClose: () => void;
 }
@@ -52,6 +54,8 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
   const [section, setSection] = useState<TaskSection>(task?.section ?? defaultSection);
   const [reminder, setReminder] = useState(task?.reminder ?? '');
   const [recurring, setRecurring] = useState<Recurring[]>([]);
+  const [persistent, setPersistent] = useState(task?.persistent ?? false);
+  const [reminderOnly, setReminderOnly] = useState(task?.reminderOnly ?? false);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -59,7 +63,11 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
     setName(task?.name ?? '');
     setSection(task?.section ?? defaultSection);
     setReminder(task?.reminder ?? '');
-    setRecurring(normalizeRecurring(task?.recurring));
+    const rec = normalizeRecurring(task?.recurring);
+    setRecurring(rec);
+    // Default persistent to true when a recurring task is being created/edited.
+    setPersistent(task?.persistent ?? rec.length > 0);
+    setReminderOnly(task?.reminderOnly ?? false);
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
   }, [visible, task, defaultSection]);
@@ -88,24 +96,32 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
   }, [reminder]);
 
   const requiresReminder = false;
-  const canSave = Boolean(name.trim()) && (!requiresReminder || Boolean(reminder));
+  const canSave = Boolean(name.trim()) && (!reminderOnly || Boolean(reminder));
 
   const toggleRepeat = (value: Recurring) => {
-    setRecurring((prev) =>
-      prev.includes(value) ? prev.filter((r) => r !== value) : [...prev, value],
-    );
+    const next = recurring.includes(value)
+      ? recurring.filter((r) => r !== value)
+      : [...recurring, value];
+    setRecurring(next);
+    // Keep persistent in sync — enable on first pick, disable when none left.
+    if (next.length > 0 && !persistent) setPersistent(true);
+    if (next.length === 0) setPersistent(false);
   };
 
   const handleSave = () => {
     if (!canSave) return;
+    const isPersistent = !reminderOnly && recurring.length > 0 && persistent;
     onSave({
       name: name.trim(),
-      section: recurring.includes('daily') ? 'daily' : section,
+      section: !reminderOnly && recurring.includes('daily') ? 'daily' : section,
       reminder: reminder || undefined,
-      recurring: recurring.length ? recurring : undefined,
+      recurring: !reminderOnly && recurring.length ? recurring : undefined,
+      persistent: isPersistent || undefined,
+      reminderOnly: reminderOnly || undefined,
     });
     onClose();
   };
+
 
   return (
     <Modal
@@ -121,12 +137,18 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
         >
           <View style={styles.header}>
             <View style={styles.headerRow}>
-              <Text style={styles.title}>{task ? 'Edit goal' : 'Add goal'}</Text>
+              <Text style={styles.title}>
+                {task
+                  ? (task.reminderOnly ? 'Edit reminder' : 'Edit goal')
+                  : (reminderOnly ? 'Add reminder' : 'Add goal')}
+              </Text>
               <Pressable style={styles.closeBtn} onPress={onClose} accessibilityLabel="Close" hitSlop={8}>
                 <Text style={styles.closeText}>X</Text>
               </Pressable>
             </View>
-            <Text style={styles.subtitle}>Keep it small and doable.</Text>
+            <Text style={styles.subtitle}>
+              {reminderOnly ? 'Set a date & time to be notified.' : 'Keep it small and doable.'}
+            </Text>
           </View>
 
           <ScrollView
@@ -135,12 +157,31 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {/* Task type toggle: Goal vs Reminder */}
+            <View style={styles.typeRow}>
+              <Pressable
+                style={[styles.typeTab, !reminderOnly && styles.typeTabActive]}
+                onPress={() => setReminderOnly(false)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: !reminderOnly }}
+              >
+                <Text style={[styles.typeTabText, !reminderOnly && styles.typeTabTextActive]}>🎯  Goal</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.typeTab, reminderOnly && styles.typeTabActiveReminder]}
+                onPress={() => setReminderOnly(true)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: reminderOnly }}
+              >
+                <Text style={[styles.typeTabText, reminderOnly && styles.typeTabTextActiveReminder]}>🔔  Reminder</Text>
+              </Pressable>
+            </View>
             <View style={styles.field}>
               <Text style={styles.label}>What needs doing?</Text>
               <TextInput
                 ref={inputRef}
                 style={styles.input}
-                placeholder="e.g. Cut grass"
+                placeholder={reminderOnly ? 'e.g. Call dentist' : 'e.g. Cut grass'}
                 placeholderTextColor={APP_COLORS.textSubtle}
                 value={name}
                 onChangeText={setName}
@@ -148,64 +189,15 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
               />
             </View>
 
+            {/* Reminder date — always visible, required when reminderOnly */}
             <View style={styles.field}>
               <Text style={styles.label}>
-                Repeat <Text style={styles.optional}>(optional — pick any)</Text>
-              </Text>
-              <View style={styles.chipRow}>
-                {REPEAT_OPTIONS.map((option) => {
-                  const selected = recurring.includes(option.value);
-                  return (
-                    <Pressable
-                      key={option.label}
-                      onPress={() => toggleRepeat(option.value)}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      style={[styles.chip, selected && styles.chipSelected]}
-                    >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                        {option.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            {recurring.length === 0 ? (
-              <View style={styles.field}>
-                <Text style={styles.label}>Section</Text>
-                <View style={styles.chipRow}>
-                  {SECTION_OPTIONS.map((option) => {
-                    const theme = SECTION_THEMES[option];
-                    const selected = section === option;
-                    return (
-                      <Pressable
-                        key={option}
-                        onPress={() => setSection(option)}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                        style={[
-                          styles.chip,
-                          selected && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
-                        ]}
-                      >
-                        <Text style={styles.chipIcon}>{theme.icon}</Text>
-                        <Text style={[styles.chipText, selected && { color: theme.accent }]}>
-                          {SECTION_LABELS[option]}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            ) : null}
-
-            <View style={styles.field}>
-              <Text style={styles.label}>
-                Reminder{requiresReminder && !reminder
-                  ? <Text style={styles.requiredHint}> — required for repeating tasks</Text>
-                  : null}
+                {reminderOnly ? (
+                  <>
+                    Date &amp; Time
+                    {!reminder ? <Text style={styles.requiredHint}> — required</Text> : null}
+                  </>
+                ) : 'Reminder'}
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ flex: 1 }}>
@@ -218,6 +210,87 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                 ) : null}
               </View>
             </View>
+
+            {/* Goal-only fields: Repeat + Section/Mode */}
+            {!reminderOnly ? (
+              <>
+                <View style={styles.field}>
+                  <Text style={styles.label}>
+                    Repeat <Text style={styles.optional}>(optional — pick any)</Text>
+                  </Text>
+                  <View style={styles.chipRow}>
+                    {REPEAT_OPTIONS.map((option) => {
+                      const selected = recurring.includes(option.value);
+                      return (
+                        <Pressable
+                          key={option.label}
+                          onPress={() => toggleRepeat(option.value)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          style={[styles.chip, selected && styles.chipSelected]}
+                        >
+                          <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                            {option.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                {recurring.length === 0 ? (
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Section</Text>
+                    <View style={styles.chipRow}>
+                      {SECTION_OPTIONS.map((option) => {
+                        const theme = SECTION_THEMES[option];
+                        const selected = section === option;
+                        return (
+                          <Pressable
+                            key={option}
+                            onPress={() => setSection(option)}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected }}
+                            style={[
+                              styles.chip,
+                              selected && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
+                            ]}
+                          >
+                            <Text style={styles.chipIcon}>{theme.icon}</Text>
+                            <Text style={[styles.chipText, selected && { color: theme.accent }]}>
+                              {SECTION_LABELS[option]}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ) : (
+                  // When repeat is selected, show the Persistent Habit toggle.
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Mode</Text>
+                    <Pressable
+                      style={[styles.persistentRow, persistent && styles.persistentRowOn]}
+                      onPress={() => setPersistent((v) => !v)}
+                      accessibilityRole="switch"
+                      accessibilityState={{ checked: persistent }}
+                    >
+                      <View style={[styles.persistentDot, persistent && styles.persistentDotOn]} />
+                      <View style={styles.persistentText}>
+                        <Text style={[styles.persistentTitle, persistent && styles.persistentTitleOn]}>
+                          {persistent ? '🔁  Persistent habit' : '🔗  One-time chain'}
+                        </Text>
+                        <Text style={styles.persistentDesc}>
+                          {persistent
+                            ? 'One task, always there. Tracks time across all periods.'
+                            : 'Spawns a new copy each period when completed.'}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </View>
+                )}
+              </>
+            ) : null}
           </ScrollView>
 
           <View style={styles.actions}>
@@ -233,7 +306,11 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
               onPress={handleSave}
               disabled={!canSave}
             >
-              <Text style={styles.primaryBtnText}>{task ? 'Save goal' : 'Add goal'}</Text>
+              <Text style={styles.primaryBtnText}>
+                {task
+                  ? (task.reminderOnly ? 'Save reminder' : 'Save goal')
+                  : (reminderOnly ? 'Add reminder' : 'Add goal')}
+              </Text>
             </Pressable>
           </View>
         </KeyboardAvoidingView>
@@ -247,6 +324,40 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: APP_COLORS.background,
   },
+  typeRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  typeTab: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    borderWidth: 2,
+    borderColor: APP_COLORS.border,
+    backgroundColor: APP_COLORS.surface,
+    alignItems: 'center',
+  },
+  typeTabActive: {
+    borderColor: APP_COLORS.primary,
+    backgroundColor: SECTION_THEMES.daily.accentSoft,
+  },
+  typeTabActiveReminder: {
+    borderColor: '#d97706',
+    backgroundColor: '#fef3c7',
+  },
+  typeTabText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: APP_COLORS.textMuted,
+  },
+  typeTabTextActive: {
+    color: APP_COLORS.primaryDark,
+  },
+  typeTabTextActiveReminder: {
+    color: '#92400e',
+  },
+
   keyboard: {
     flex: 1,
   },
@@ -402,4 +513,50 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: '600',
   },
+  persistentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    borderWidth: 2,
+    borderColor: APP_COLORS.border,
+    backgroundColor: APP_COLORS.surface,
+  },
+  persistentRowOn: {
+    borderColor: APP_COLORS.primary,
+    backgroundColor: SECTION_THEMES.daily.accentSoft,
+  },
+  persistentDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2.5,
+    borderColor: APP_COLORS.textSubtle,
+    backgroundColor: APP_COLORS.surface,
+  },
+  persistentDotOn: {
+    borderColor: APP_COLORS.primary,
+    backgroundColor: APP_COLORS.primary,
+  },
+  persistentText: {
+    flex: 1,
+    gap: 2,
+  },
+  persistentTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: APP_COLORS.textMuted,
+  },
+  persistentTitleOn: {
+    color: APP_COLORS.primaryDark,
+  },
+  persistentDesc: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: APP_COLORS.textSubtle,
+    lineHeight: 20,
+  },
 });
+

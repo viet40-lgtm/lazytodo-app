@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_COLORS, RADIUS, SCREEN_PADDING, SPACING, softShadow } from '../src/constants';
+import { useAuth } from '../src/hooks/useAuth';
 
 const FEATURES = [
   {
@@ -112,16 +113,19 @@ const FAQS = [
 export default function LandingPage() {
   const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const auth = useAuth();
 
   // Native builds skip the landing page and go straight to the app.
+  // On web, if the user is already authenticated, also skip the landing page.
   useEffect(() => {
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== 'web' || (auth.configured && auth.userId)) {
       router.replace('/app');
     }
-  }, [router]);
+  }, [router, auth.configured, auth.userId]);
 
   // On native this renders nothing while the redirect fires.
-  if (Platform.OS !== 'web') return null;
+  // On web, also render nothing if loading auth state or redirecting.
+  if (Platform.OS !== 'web' || auth.loading || (auth.configured && auth.userId)) return null;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>

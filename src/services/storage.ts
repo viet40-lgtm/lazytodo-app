@@ -101,6 +101,10 @@ function normalizeTask(raw: unknown): Task | null {
     ...(typeof task.seriesTotalMinutes === 'number' && task.seriesTotalMinutes >= 0
       ? { seriesTotalMinutes: Math.round(task.seriesTotalMinutes) }
       : {}),
+    // Preserve the persistent flag so habit tasks survive storage round-trips.
+    ...(task.persistent === true ? { persistent: true } : {}),
+    // Preserve the reminderOnly flag so reminder tasks survive storage round-trips.
+    ...(task.reminderOnly === true ? { reminderOnly: true } : {}),
     createdAt,
   };
 }

@@ -34,11 +34,12 @@ export default function HomeScreen() {
   const { auth: authParam } = useLocalSearchParams<{ auth?: string }>();
 
   // Auto-open auth modal if navigated here with ?auth=1 (e.g. from landing page Sign In).
+  // Only open if the user isn't already logged in.
   useEffect(() => {
-    if (authParam === '1' && auth.configured) {
+    if (authParam === '1' && auth.configured && !auth.userId) {
       setAuthOpen(true);
     }
-  }, [authParam, auth.configured]);
+  }, [authParam, auth.configured, auth.userId]);
 
   const {
     hydrated,
@@ -101,6 +102,8 @@ export default function HomeScreen() {
     section: TaskSection;
     reminder?: string;
     recurring?: Recurring[];
+    persistent?: boolean;
+    reminderOnly?: boolean;
   }) => {
     if (editingTask) {
       updateTask(editingTask.id, data);
@@ -128,7 +131,8 @@ export default function HomeScreen() {
 
   const handleToggle = useCallback(
     (task: Task) => {
-      if (hasRecurring(task)) {
+      // Persistent habits just toggle completed — no "remove repeat?" prompt.
+      if (hasRecurring(task) && !task.persistent) {
         setRemoveConfirmId(task.id);
         return;
       }

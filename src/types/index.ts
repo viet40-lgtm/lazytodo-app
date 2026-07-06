@@ -17,6 +17,11 @@ export interface Task {
   reminder?: string;
   /** One or more repeat schedules; task can appear in multiple sections. */
   recurring?: Recurring[];
+  /**
+   * When true the task is a pure reminder — no time tracking, just a checkbox + alert.
+   */
+  reminderOnly?: boolean;
+  persistent?: boolean;
   notificationId?: string;
   createdAt: number;
   updatedAt?: number;

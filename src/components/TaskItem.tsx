@@ -7,9 +7,9 @@ import {
   SPACING,
   softShadow,
 } from '../constants';
-import type { Task, TaskSection } from '../types';
-import { formatSectionTime } from '../utils/periodTotals';
-import { hasRecurring } from '../utils/recurringList';
+import type { Recurring, Task, TaskSection } from '../types';
+import { minutesForSection } from '../utils/periodTotals';
+import { hasRecurring, normalizeRecurring } from '../utils/recurringList';
 import { recurringLabelShort } from '../utils/series';
 
 import { formatDuration } from '../utils/time';
@@ -31,6 +31,37 @@ interface TaskItemProps {
 function recurringLabel(recurring?: Task['recurring']): string | null {
   if (!recurring?.length) return null;
   return recurringLabelShort(recurring);
+}
+
+// Maps a Recurring value to the TaskSection used for time-range queries.
+const RECURRING_TO_SECTION: Record<Recurring, TaskSection> = {
+  daily: 'daily',
+  weekly: 'weekly',
+  biweekly: 'weekly',
+  monthly: 'monthly',
+  yearly: 'yearly',
+};
+
+const STAT_LABEL: Record<TaskSection, string> = {
+  today: 'Today',
+  daily: 'Today',
+  weekly: 'Week',
+  monthly: 'Month',
+  yearly: 'Year',
+};
+
+/** Returns per-period time stats for a persistent habit task. */
+function getHabitStats(task: Task): { label: string; mins: number; section: TaskSection }[] {
+  const recurring = normalizeRecurring(task.recurring);
+  const seen = new Set<TaskSection>();
+  const result: { label: string; mins: number; section: TaskSection }[] = [];
+  for (const r of recurring) {
+    const section = RECURRING_TO_SECTION[r];
+    if (seen.has(section)) continue;
+    seen.add(section);
+    result.push({ label: STAT_LABEL[section], mins: minutesForSection(task, section), section });
+  }
+  return result;
 }
 
 function formatReminder(reminder: string): string {
@@ -63,7 +94,9 @@ function TaskRow({
   onLogTime,
   onReorder,
 }: TaskItemProps) {
-  const repeat = recurringLabel(task.recurring);
+  // Hide the recurring chip when the stats row is visible — it already shows the periods.
+  const showsStatsRow = hasRecurring(task) && (task.persistent || (task.timeLogs?.length ?? 0) > 0);
+  const repeat = showsStatsRow ? null : recurringLabel(task.recurring);
   const done = task.completed;
   const hasMeta = Boolean(task.reminder || repeat);
 
@@ -121,7 +154,11 @@ function TaskRow({
                 </View>
               ) : null}
             </Pressable>
-            {hasRecurring(task) ? (
+            {/* For reminder tasks: show created date inline here (2-line card) */}
+            {task.reminderOnly ? (
+              <Text style={styles.createdText}>{createdLabel(task.createdAt)}</Text>
+            ) : null}
+            {hasRecurring(task) && !task.persistent && !(task.timeLogs?.length) ? (
               <Pressable
                 style={styles.metaSkipBtn}
                 onPress={() => onSkip(task.id)}
@@ -134,40 +171,65 @@ function TaskRow({
           </View>
         ) : null}
 
-      <View style={styles.actionRow}>
-        <View style={styles.timeBtnGroup}>
-          <Pressable
-            style={[styles.timeBtn, { backgroundColor: accentSoft }]}
-            onPress={() => onLogTime(task.id, 5)}
-            hitSlop={4}
-          >
-            <Text style={[styles.timeBtnText, { color: accentColor }]}>+5m</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.timeBtn, { backgroundColor: accentSoft }]}
-            onPress={() => onLogTime(task.id, 30)}
-            hitSlop={4}
-          >
-            <Text style={[styles.timeBtnText, { color: accentColor }]}>+30m</Text>
-          </Pressable>
+      {/* Time-tracking row \u2014 hidden for reminder tasks */}
+      {!task.reminderOnly ? (
+        <View style={styles.actionRow}>
+          <View style={styles.timeBtnGroup}>
+            <Pressable
+              style={[styles.timeBtn, { backgroundColor: accentSoft }]}
+              onPress={() => onLogTime(task.id, 5)}
+              hitSlop={4}
+            >
+              <Text style={[styles.timeBtnText, { color: accentColor }]}>+5m</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.timeBtn, { backgroundColor: accentSoft }]}
+              onPress={() => onLogTime(task.id, 30)}
+              hitSlop={4}
+            >
+              <Text style={[styles.timeBtnText, { color: accentColor }]}>+30m</Text>
+            </Pressable>
+          </View>
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <View style={styles.spentChip}>
+              {hasRecurring(task) && !task.persistent ? (
+                <Text style={styles.spentText} numberOfLines={2}>
+                  {minutesForSection(task, listSection) > 0
+                    ? formatDuration(minutesForSection(task, listSection))
+                    : '—'}
+                </Text>
+              ) : (
+                <Text style={styles.spentText}>{formatDuration(task.spentMinutes)}</Text>
+              )}
+            </View>
+          </View>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <View style={styles.spentChip}>
+              <Text style={styles.createdText}>{createdLabel(task.createdAt)}</Text>
+            </View>
+          </View>
         </View>
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <View style={styles.spentChip}>
-            {hasRecurring(task) ? (
-              <Text style={styles.spentText} numberOfLines={2}>
-                {formatSectionTime(task, listSection)}
+      ) : null}
+
+      {/* Per-period time breakdown for persistent habits */}
+      {hasRecurring(task) && (task.persistent || (task.timeLogs?.length ?? 0) > 0) ? (
+        <View style={styles.statsRow}>
+          {getHabitStats(task).map(({ label, mins, section }) => (
+            <View
+              key={section}
+              style={[
+                styles.statChip,
+                section === listSection && { borderColor: accentColor },
+              ]}
+            >
+              <Text style={styles.statLabel}>{label}</Text>
+              <Text style={[styles.statValue, mins > 0 && { color: accentColor }]}>
+                {mins > 0 ? formatDuration(mins) : '—'}
               </Text>
-            ) : (
-              <Text style={styles.spentText}>{formatDuration(task.spentMinutes)}</Text>
-            )}
-          </View>
+            </View>
+          ))}
         </View>
-        <View style={{ flex: 1, alignItems: 'flex-end' }}>
-          <View style={styles.spentChip}>
-            <Text style={styles.createdText}>{createdLabel(task.createdAt)}</Text>
-          </View>
-        </View>
-      </View>
+      ) : null}
     </View>
   );
 }
@@ -312,6 +374,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },
+  reminderDateRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingTop: 2,
+  },
   corner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -340,4 +407,32 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: -2,
   },
+  statsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs + 2,
+    marginTop: 2,
+  },
+  statChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: SPACING.sm + 2,
+    paddingVertical: 4,
+    borderRadius: RADIUS.pill,
+    borderWidth: 1.5,
+    borderColor: APP_COLORS.border,
+    backgroundColor: APP_COLORS.surfaceMuted,
+  },
+  statLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: APP_COLORS.textSubtle,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: APP_COLORS.textMuted,
+  },
 });
+
