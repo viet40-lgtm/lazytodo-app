@@ -102,21 +102,15 @@ function TaskRow({
   const done = task.completed;
   const hasMeta = Boolean(task.reminder || repeat);
 
-  // M1 + L3: compute display time before JSX to avoid IIFE and double-call
-  const subtaskTotal = task.subtasks && task.subtasks.length > 0
-    ? task.subtasks.reduce((sum, st) => sum + (st.timeSpent || 0), 0)
-    : null;
+  // Center timer always reads spentMinutes — updated by both main-card +5m
+  // and sub-task modal +5m (via onLogTime). Sub-task timeSpent values are
+  // per-subtask detail only, shown inside the sub-task modal.
   const sectionMins = (hasRecurring(task) && !task.persistent)
     ? minutesForSection(task, listSection)
     : 0;
-  const displayMins = subtaskTotal !== null ? subtaskTotal
-    : hasRecurring(task) && !task.persistent ? sectionMins
-    : task.spentMinutes;
-  const displayTime = subtaskTotal !== null
-    ? formatDuration(displayMins)
-    : hasRecurring(task) && !task.persistent
-      ? sectionMins > 0 ? formatDuration(sectionMins) : '—'
-      : formatDuration(displayMins);
+  const displayTime = hasRecurring(task) && !task.persistent
+    ? sectionMins > 0 ? formatDuration(sectionMins) : '—'
+    : formatDuration(task.spentMinutes);
 
   return (
     <View style={[styles.card, { borderLeftColor: accentColor }, done && styles.cardDone]}>
