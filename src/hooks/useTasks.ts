@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AppState, Task } from '../types';
 import { pushRemoteState, pullRemoteState, subscribeToRemoteState } from '../services/cloud';
-import { loadState, saveState } from '../services/storage';
 import { syncReminders } from '../services/reminders';
 import { isTaskOverdue } from '../utils/recurring';
 import { isQueuedSuccessor } from '../utils/series';
@@ -52,18 +51,8 @@ export function useTasks(userId: string | null = null) {
     setHydrated(false);
 
     if (!userId) {
-      // Guest mode: load from local storage.
-      loadState()
-        .then((local) => {
-          if (!active) return;
-          setState(local);
-          setHydrated(true);
-        })
-        .catch(() => {
-          if (!active) return;
-          setState({ tasks: [], savedAt: Date.now() });
-          setHydrated(true);
-        });
+      setState({ tasks: [], savedAt: Date.now() });
+      setHydrated(true);
     } else {
       // Logged-in mode: load from cloud.
       setSyncing(true);
@@ -95,8 +84,6 @@ export function useTasks(userId: string | null = null) {
       const currentState = stateRef.current ?? state;
       if (userId) {
         pushRemoteState(userId, currentState).catch(() => {});
-      } else {
-        saveState(currentState).catch(() => {});
       }
     }, 800);
     return () => {
@@ -293,9 +280,7 @@ export function useTasks(userId: string | null = null) {
     );
   }, []);
 
-  const loadFromBackup = useCallback((backup: AppState) => {
-    setState({ ...backup, savedAt: Date.now() });
-  }, []);
+
 
   // Daily reset for persistent habits (or recurring tasks with time logs):
   // if they were completed before today, mark them incomplete.
@@ -369,7 +354,6 @@ export function useTasks(userId: string | null = null) {
     skipTask,
     reorderTask,
     markCelebrated,
-    loadFromBackup,
     forceSync,
   };
 }

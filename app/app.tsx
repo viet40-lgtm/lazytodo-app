@@ -35,13 +35,12 @@ export default function HomeScreen() {
   const auth = useAuth();
   const { auth: authParam } = useLocalSearchParams<{ auth?: string }>();
 
-  // Auto-open auth modal if navigated here with ?auth=1 (e.g. from landing page Sign In).
-  // Only open if the user isn't already logged in.
+  // Auto-open auth modal if the user is not logged in to enforce cloud sync.
   useEffect(() => {
-    if (authParam === '1' && auth.configured && !auth.userId) {
+    if (auth.configured && !auth.userId && !auth.loading) {
       setAuthOpen(true);
     }
-  }, [authParam, auth.configured, auth.userId]);
+  }, [auth.configured, auth.userId, auth.loading]);
 
   const {
     hydrated,
@@ -56,16 +55,10 @@ export default function HomeScreen() {
     deleteTask,
     skipTask,
     reorderTask,
-    toggleSubtask,
     markCelebrated,
-    loadFromBackup,
     forceSync,
   } = useTasks(auth.userId);
 
-  const handleRestoreBackup = (restored: AppState) => {
-    loadFromBackup(restored);
-    setSettingsOpen(false);
-  };
 
   const { todayTasks, dailyTasks, weeklyTasks, monthlyTasks, yearlyTasks } = useMemo(() => {
     const now = Date.now();
@@ -243,7 +236,6 @@ export default function HomeScreen() {
           onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
-          onToggleSubtask={toggleSubtask}
           emptyText="Long-term tasks. No rush."
         />
         <Quote text={quote} />
@@ -270,8 +262,8 @@ export default function HomeScreen() {
         onClose={() => setManageSubtasksId(null)}
       />
       <AuthModal
-        visible={authOpen}
-        cancellable
+        visible={authOpen || (!auth.userId && !auth.loading)}
+        cancellable={!!auth.userId}
         configured={auth.configured}
         email={auth.email}
         onSignIn={auth.signIn}
@@ -288,7 +280,6 @@ export default function HomeScreen() {
       <SettingsModal
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        onRestore={handleRestoreBackup}
       />
       <ConfirmModal
         visible={removeConfirmId !== null}

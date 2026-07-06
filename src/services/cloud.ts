@@ -1,6 +1,6 @@
 import type { AppState } from '../types';
 import { supabase } from './supabase';
-import { normalizeState } from './storage';
+import { normalizeState } from '../utils/normalize';
 
 const TABLE = 'app_state';
 

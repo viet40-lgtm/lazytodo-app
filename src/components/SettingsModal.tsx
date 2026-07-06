@@ -12,83 +12,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_COLORS, RADIUS, SCREEN_PADDING, SPACING } from '../constants';
 import type { AppState } from '../types';
-import { loadState, saveState } from '../services/storage';
-
 interface SettingsModalProps {
   visible: boolean;
   onClose: () => void;
-  onRestore: (state: AppState) => void;
 }
 
-export function SettingsModal({ visible, onClose, onRestore }: SettingsModalProps) {
+export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   const [status, setStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const showStatus = (msg: string) => {
     setStatus(msg);
     setTimeout(() => setStatus(null), 3500);
-  };
-
-  // ── Backup ──────────────────────────────────────────────────────────────
-  const handleBackup = async () => {
-    try {
-      const state = await loadState();
-      const json = JSON.stringify(state, null, 2);
-      const filename = `lazytodo-backup-${new Date().toISOString().slice(0, 10)}.json`;
-
-      if (Platform.OS === 'web') {
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-        showStatus('✅ Backup downloaded!');
-      } else {
-        // Native: share via share sheet
-        const { Share } = await import('react-native');
-        await Share.share({ title: filename, message: json });
-        showStatus('✅ Backup shared!');
-      }
-    } catch (e) {
-      showStatus('❌ Backup failed. Try again.');
-    }
-  };
-
-  // ── Restore ─────────────────────────────────────────────────────────────
-  const handleRestoreWeb = () => {
-    if (!fileInputRef.current) {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json,application/json';
-      input.onchange = async (e: Event) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) return;
-        try {
-          const text = await file.text();
-          const parsed = JSON.parse(text);
-          if (!parsed || !Array.isArray(parsed.tasks)) {
-            showStatus('❌ Invalid backup file.');
-            return;
-          }
-          await saveState(parsed);
-          onRestore(parsed);
-          showStatus(`✅ Restored ${parsed.tasks.length} tasks!`);
-        } catch {
-          showStatus('❌ Could not read file. Make sure it is a valid backup.');
-        }
-      };
-      input.click();
-    }
-  };
-
-  const handleRestore = () => {
-    if (Platform.OS === 'web') {
-      handleRestoreWeb();
-    } else {
-      showStatus('On mobile, tap Backup first, then re-import the shared file.');
-    }
   };
 
   return (
@@ -109,44 +44,16 @@ export function SettingsModal({ visible, onClose, onRestore }: SettingsModalProp
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-          {/* Backup / Restore section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Data Backup & Restore</Text>
-            <Text style={styles.sectionDesc}>
-              Save all your tasks to a local JSON file so you can restore them any time —
-              even if cloud sync fails.
-            </Text>
-
-            <Pressable style={[styles.btn, styles.backupBtn]} onPress={handleBackup}>
-              <Text style={styles.btnIcon}>⬇</Text>
-              <View style={styles.btnText}>
-                <Text style={styles.btnLabel}>Backup Data</Text>
-                <Text style={styles.btnSub}>Download a .json file to your device</Text>
-              </View>
-            </Pressable>
-
-            <Pressable style={[styles.btn, styles.restoreBtn]} onPress={handleRestore}>
-              <Text style={styles.btnIcon}>⬆</Text>
-              <View style={styles.btnText}>
-                <Text style={[styles.btnLabel, { color: '#fff' }]}>Restore from Backup</Text>
-                <Text style={[styles.btnSub, { color: 'rgba(255,255,255,0.75)' }]}>
-                  Pick a .json backup file to load
-                </Text>
-              </View>
-            </Pressable>
-
-            {status ? (
-              <View style={styles.statusBox}>
-                <Text style={styles.statusText}>{status}</Text>
-              </View>
-            ) : null}
-          </View>
+          {status ? (
+            <View style={styles.statusBox}>
+              <Text style={styles.statusText}>{status}</Text>
+            </View>
+          ) : null}
 
           {/* Info */}
           <View style={styles.infoBox}>
             <Text style={styles.infoText}>
-              💡 Tip: Back up regularly, especially before major changes. The backup file
-              contains all your tasks, sections, reminders, and time logs.
+              💡 Using Cloud Sync. Your tasks are securely saved to the cloud and available across all your devices.
             </Text>
           </View>
         </ScrollView>

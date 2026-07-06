@@ -86,13 +86,18 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
       };
 
       const others = prev.filter(st => st.id !== id);
+      let result;
       if (isCompleting) {
-        return [...others, updated];
+        result = [...others, updated];
       } else {
         const active = others.filter(st => !st.completed);
         const completed = others.filter(st => st.completed);
-        return [...active, updated, ...completed];
+        result = [...active, updated, ...completed];
       }
+      if (task) {
+        onSave(task.id, result.length > 0 ? result : []);
+      }
+      return result;
     });
   };
 
@@ -106,9 +111,15 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
   };
 
   const handleLogTime = (id: string, mins: number) => {
-    setSubtasks((prev) => prev.map(st => 
-      st.id === id ? { ...st, timeSpent: (st.timeSpent || 0) + mins } : st
-    ));
+    setSubtasks((prev) => {
+      const updated = prev.map(st => 
+        st.id === id ? { ...st, timeSpent: (st.timeSpent || 0) + mins } : st
+      );
+      if (task) {
+        onSave(task.id, updated.length > 0 ? updated : []);
+      }
+      return updated;
+    });
     if (task && onLogTime) {
       onLogTime(task.id, mins);
     }
