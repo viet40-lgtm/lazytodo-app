@@ -101,6 +101,15 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
 
   const requiresReminder = false;
   const canSave = Boolean(name.trim()) && (!reminderOnly || Boolean(reminder));
+  
+  const hasChanges = (
+    name !== (task?.name ?? '') ||
+    section !== (task?.section ?? defaultSection) ||
+    reminder !== (task?.reminder ?? '') ||
+    JSON.stringify(recurring) !== JSON.stringify(normalizeRecurring(task?.recurring)) ||
+    persistent !== (task?.persistent ?? false) ||
+    reminderOnly !== (task?.reminderOnly ?? false)
+  );
 
   const toggleRepeat = (value: Recurring) => {
     const next = recurring.includes(value)
@@ -145,13 +154,32 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                   ? (task.reminderOnly ? 'Edit reminder' : 'Edit task')
                   : (reminderOnly ? 'Add reminder' : 'Add task')}
               </Text>
-              <Pressable style={styles.closeBtn} onPress={onClose} accessibilityLabel="Close" hitSlop={8}>
-                <Text style={styles.closeText}>X</Text>
-              </Pressable>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
+                <Pressable
+                  style={[
+                    styles.headerSaveBtn, 
+                    !canSave && styles.headerSaveBtnDisabled,
+                    hasChanges && { borderColor: APP_COLORS.delete }
+                  ]}
+                  onPress={handleSave}
+                  disabled={!canSave}
+                  hitSlop={8}
+                >
+                  <Text style={[
+                    styles.headerSaveText,
+                    hasChanges && { color: APP_COLORS.delete }
+                  ]}>Save</Text>
+                </Pressable>
+                <Pressable style={styles.closeBtn} onPress={onClose} accessibilityLabel="Close" hitSlop={8}>
+                  <Text style={styles.closeText}>X</Text>
+                </Pressable>
+              </View>
             </View>
-            <Text style={styles.subtitle}>
-              {reminderOnly ? 'Set a date & time to be notified.' : 'Keep it small and doable.'}
-            </Text>
+            {reminderOnly ? (
+              <Text style={styles.subtitle}>
+                Set a date & time to be notified.
+              </Text>
+            ) : null}
           </View>
 
           <ScrollView
@@ -268,27 +296,6 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
               </>
             ) : null}
           </ScrollView>
-
-          <View style={styles.actions}>
-            <Pressable style={styles.secondaryBtn} onPress={onClose}>
-              <Text style={styles.secondaryBtnText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.primaryBtn,
-                pressed && styles.primaryBtnPressed,
-                !canSave && styles.primaryBtnDisabled,
-              ]}
-              onPress={handleSave}
-              disabled={!canSave}
-            >
-              <Text style={styles.primaryBtnText}>
-                {task
-                  ? (task.reminderOnly ? 'Save reminder' : 'Save task')
-                  : (reminderOnly ? 'Add reminder' : 'Add task')}
-              </Text>
-            </Pressable>
-          </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
@@ -369,7 +376,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: APP_COLORS.headerMuted,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -377,8 +384,26 @@ const styles = StyleSheet.create({
     fontSize: 30,
     lineHeight: 30,
     fontWeight: '700',
-    color: APP_COLORS.headerMuted,
+    color: '#FFFFFF',
     marginTop: -4,
+  },
+  headerSaveBtn: {
+    height: 40,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerSaveText: {
+    fontSize: 25,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.6,
+  },
+  headerSaveBtnDisabled: {
+    // Keep fully white even when disabled
   },
   scroll: {
     flex: 1,

@@ -266,6 +266,7 @@ export default function HomeScreen() {
         visible={!!manageSubtasksId}
         task={manageSubtasksId ? tasks.find(t => t.id === manageSubtasksId) || null : null}
         onSave={handleSaveSubtasks}
+        onLogTime={logTime}
         onClose={() => setManageSubtasksId(null)}
       />
       <AuthModal

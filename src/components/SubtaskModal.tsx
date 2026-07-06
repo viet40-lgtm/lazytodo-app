@@ -20,10 +20,11 @@ interface SubtaskModalProps {
   visible: boolean;
   task: Task | null;
   onSave: (taskId: string, subtasks: SubTask[]) => void;
+  onLogTime?: (taskId: string, mins: number) => void;
   onClose: () => void;
 }
 
-export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalProps) {
+export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: SubtaskModalProps) {
   function formatDate(ts?: number) {
     if (!ts) return '';
     const d = new Date(ts);
@@ -43,7 +44,13 @@ export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalPro
       const timer = setTimeout(() => inputRef.current?.focus(), 100);
       return () => clearTimeout(timer);
     }
-  }, [visible, task]);
+  }, [visible, task?.id]);
+
+  const originalSubtasks = task?.subtasks ?? [];
+  const initialActive = originalSubtasks.filter(st => !st.completed);
+  const initialCompleted = originalSubtasks.filter(st => st.completed);
+  const normalizedInitial = [...initialActive, ...initialCompleted];
+  const hasChanges = JSON.stringify(subtasks) !== JSON.stringify(normalizedInitial);
 
   const handleAdd = () => {
     const text = input.trim();
@@ -56,6 +63,12 @@ export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalPro
       timeSpent: 0
     }]);
     setInput('');
+  };
+
+  const handleEditName = (id: string, newName: string) => {
+    setSubtasks((prev) => prev.map(st => 
+      st.id === id ? { ...st, name: newName } : st
+    ));
   };
 
   const handleRemove = (id: string) => {
@@ -98,6 +111,9 @@ export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalPro
     setSubtasks((prev) => prev.map(st => 
       st.id === id ? { ...st, timeSpent: (st.timeSpent || 0) + mins } : st
     ));
+    if (task && onLogTime) {
+      onLogTime(task.id, mins);
+    }
   };
 
   const handleSave = () => {
@@ -117,9 +133,18 @@ export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalPro
               <Text style={styles.title} numberOfLines={1}>{task.name}</Text>
               <Text style={styles.subtitle}>Sub-tasks</Text>
             </View>
-            <Pressable hitSlop={12} onPress={onClose} style={styles.closeBtn}>
-              <Text style={styles.closeText}>X</Text>
-            </Pressable>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
+              <Pressable 
+                style={[styles.headerSaveBtn, hasChanges && { borderColor: APP_COLORS.delete }]} 
+                onPress={handleSave} 
+                hitSlop={8}
+              >
+                <Text style={[styles.headerSaveText, hasChanges && { color: APP_COLORS.delete }]}>Save</Text>
+              </Pressable>
+              <Pressable hitSlop={12} onPress={onClose} style={styles.closeBtn}>
+                <Text style={styles.closeText}>X</Text>
+              </Pressable>
+            </View>
           </View>
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <View style={styles.subtaskList}>
@@ -135,9 +160,16 @@ export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalPro
                       {st.completed ? <Text style={styles.subtaskCheckmark}>✓</Text> : null}
                     </Pressable>
                     <View style={styles.subtaskNameCol}>
-                      <Text style={[styles.subtaskName, st.completed && styles.subtaskNameDone]}>
-                        {st.name}
-                      </Text>
+                      <TextInput
+                        style={[
+                          styles.subtaskName, 
+                          styles.subtaskNameInput, 
+                          st.completed && styles.subtaskNameDone
+                        ]}
+                        value={st.name}
+                        onChangeText={(text) => handleEditName(st.id, text)}
+                        underlineColorAndroid="transparent"
+                      />
                     </View>
                     <View style={styles.corner}>
                       <View style={styles.sortArrows}>
@@ -201,11 +233,6 @@ export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalPro
               </Pressable>
             </View>
           </ScrollView>
-          <View style={styles.actions}>
-            <Pressable style={styles.primaryBtn} onPress={handleSave}>
-              <Text style={styles.primaryBtnText}>Done</Text>
-            </Pressable>
-          </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
@@ -249,16 +276,15 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: APP_COLORS.headerMuted,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 30,
-    lineHeight: 30,
-    fontWeight: '700',
-    color: APP_COLORS.headerMuted,
-    marginTop: -4,
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    marginTop: -2,
   },
   scroll: {
     flex: 1,
@@ -348,6 +374,14 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: '#000',
   },
+  subtaskNameInput: {
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    // @ts-ignore - for web/windows to remove focus outline
+    outlineStyle: 'none',
+  },
   subtaskNameDone: {
     color: APP_COLORS.textSubtle,
     textDecorationLine: 'line-through',
@@ -436,6 +470,21 @@ const styles = StyleSheet.create({
     backgroundColor: APP_COLORS.background,
     borderTopWidth: 1,
     borderTopColor: APP_COLORS.border,
+  },
+  headerSaveBtn: {
+    height: 40,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerSaveText: {
+    fontSize: 25,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.6,
   },
   primaryBtn: {
     backgroundColor: APP_COLORS.primary,
