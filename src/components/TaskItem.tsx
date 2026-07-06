@@ -303,11 +303,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   arrowText: {
-    fontSize: 25,
+    fontSize: 32,
     fontWeight: '900',
     color: APP_COLORS.delete,
-    lineHeight: 25,
-    marginTop: -2,
+    lineHeight: 32,
+    marginTop: -4,
   },
   titleArea: {
     flex: 1,

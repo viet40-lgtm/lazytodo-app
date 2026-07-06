@@ -307,8 +307,8 @@ const styles = StyleSheet.create({
   },
   subtaskRowTop: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    alignItems: 'flex-start',
+    gap: SPACING.md,
   },
   actionRow: {
     flexDirection: 'row',
@@ -371,8 +371,10 @@ const styles = StyleSheet.create({
   },
   subtaskName: {
     flex: 1,
-    fontSize: 22,
-    color: '#000',
+    fontSize: 25,
+    lineHeight: 28,
+    fontWeight: '600',
+    color: APP_COLORS.text,
   },
   subtaskNameInput: {
     padding: 0,
@@ -383,8 +385,9 @@ const styles = StyleSheet.create({
     outlineStyle: 'none',
   },
   subtaskNameDone: {
-    color: APP_COLORS.textSubtle,
     textDecorationLine: 'line-through',
+    color: APP_COLORS.textMuted,
+    fontWeight: '500',
   },
   subtaskDate: {
     fontSize: 16,
@@ -394,6 +397,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
+    marginTop: 1,
   },
   sortArrows: {
     flexDirection: 'column',
@@ -410,11 +414,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   arrowText: {
-    fontSize: 25,
+    fontSize: 32,
     fontWeight: '900',
     color: APP_COLORS.delete,
-    lineHeight: 25,
-    marginTop: -2,
+    lineHeight: 32,
+    marginTop: -4,
   },
   subtaskDelete: {
     width: 36,
@@ -426,10 +430,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   subtaskDeleteText: {
-    color: APP_COLORS.delete,
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 23,
     lineHeight: 25,
+    color: APP_COLORS.delete,
+    fontWeight: '700',
     marginTop: -2,
   },
   inputRow: {
