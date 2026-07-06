@@ -66,31 +66,35 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
     const rec = normalizeRecurring(task?.recurring);
     setRecurring(rec);
     // Default persistent to true when a recurring task is being created/edited.
-    setPersistent(task?.persistent ?? rec.length > 0);
+    setPersistent(task?.persistent ?? false);
     setReminderOnly(task?.reminderOnly ?? false);
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
   }, [visible, task, defaultSection]);
 
-  // Auto-categorize section based on reminder date
+  // Section is always derived from the reminder date.
+  // No date → Today. Date within 7 days → Week. Within 30 → Month. Beyond → Year.
   useEffect(() => {
-    if (!reminder) return;
+    if (!reminder) {
+      // No date: default to today section.
+      setSection('today');
+      return;
+    }
     const pickedDate = new Date(reminder);
     if (isNaN(pickedDate.getTime())) return;
-    
+
     const now = new Date();
     const pickedDay = new Date(pickedDate.getFullYear(), pickedDate.getMonth(), pickedDate.getDate()).getTime();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    
     const diffDays = (pickedDay - today) / (24 * 60 * 60 * 1000);
-    
-    if (diffDays === 0) {
+
+    if (diffDays <= 0) {
       setSection('today');
-    } else if (diffDays > 0 && diffDays <= 7) {
+    } else if (diffDays <= 7) {
       setSection('weekly');
-    } else if (diffDays > 7 && diffDays <= 30) {
+    } else if (diffDays <= 30) {
       setSection('monthly');
-    } else if (diffDays > 30) {
+    } else {
       setSection('yearly');
     }
   }, [reminder]);
@@ -110,13 +114,12 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
 
   const handleSave = () => {
     if (!canSave) return;
-    const isPersistent = !reminderOnly && recurring.length > 0 && persistent;
     onSave({
       name: name.trim(),
       section: !reminderOnly && recurring.includes('daily') ? 'daily' : section,
       reminder: reminder || undefined,
       recurring: !reminderOnly && recurring.length ? recurring : undefined,
-      persistent: isPersistent || undefined,
+      persistent: !reminderOnly && recurring.length > 0 && persistent ? true : undefined,
       reminderOnly: reminderOnly || undefined,
     });
     onClose();
@@ -139,8 +142,8 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
             <View style={styles.headerRow}>
               <Text style={styles.title}>
                 {task
-                  ? (task.reminderOnly ? 'Edit reminder' : 'Edit goal')
-                  : (reminderOnly ? 'Add reminder' : 'Add goal')}
+                  ? (task.reminderOnly ? 'Edit reminder' : 'Edit task')
+                  : (reminderOnly ? 'Add reminder' : 'Add task')}
               </Text>
               <Pressable style={styles.closeBtn} onPress={onClose} accessibilityLabel="Close" hitSlop={8}>
                 <Text style={styles.closeText}>X</Text>
@@ -165,7 +168,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                 accessibilityRole="button"
                 accessibilityState={{ selected: !reminderOnly }}
               >
-                <Text style={[styles.typeTabText, !reminderOnly && styles.typeTabTextActive]}>🎯  Goal</Text>
+                <Text style={[styles.typeTabText, !reminderOnly && styles.typeTabTextActive]}>🎯  Task</Text>
               </Pressable>
               <Pressable
                 style={[styles.typeTab, reminderOnly && styles.typeTabActiveReminder]}
@@ -238,34 +241,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                   </View>
                 </View>
 
-                {recurring.length === 0 ? (
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Section</Text>
-                    <View style={styles.chipRow}>
-                      {SECTION_OPTIONS.map((option) => {
-                        const theme = SECTION_THEMES[option];
-                        const selected = section === option;
-                        return (
-                          <Pressable
-                            key={option}
-                            onPress={() => setSection(option)}
-                            accessibilityRole="button"
-                            accessibilityState={{ selected }}
-                            style={[
-                              styles.chip,
-                              selected && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
-                            ]}
-                          >
-                            <Text style={styles.chipIcon}>{theme.icon}</Text>
-                            <Text style={[styles.chipText, selected && { color: theme.accent }]}>
-                              {SECTION_LABELS[option]}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </View>
-                ) : (
+                {recurring.length > 0 ? (
                   // When repeat is selected, show the Persistent Habit toggle.
                   <View style={styles.field}>
                     <Text style={styles.label}>Mode</Text>
@@ -288,7 +264,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                       </View>
                     </Pressable>
                   </View>
-                )}
+                ) : null}
               </>
             ) : null}
           </ScrollView>
@@ -308,8 +284,8 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
             >
               <Text style={styles.primaryBtnText}>
                 {task
-                  ? (task.reminderOnly ? 'Save reminder' : 'Save goal')
-                  : (reminderOnly ? 'Add reminder' : 'Add goal')}
+                  ? (task.reminderOnly ? 'Save reminder' : 'Save task')
+                  : (reminderOnly ? 'Add reminder' : 'Add task')}
               </Text>
             </Pressable>
           </View>
@@ -497,9 +473,9 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   primaryBtnText: {
-    color: APP_COLORS.fabText,
-    fontSize: 25,
-    fontWeight: '700',
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
   secondaryBtn: {
     flex: 1,

@@ -115,7 +115,7 @@ export const SECTION_THEMES: Record<TaskSection, SectionTheme> = {
     surface: '#ffffff',
     track: '#ddd6fe',
     icon: '🗓️',
-    tagline: 'Goals for this month',
+    tagline: 'Tasks for this month',
   },
   yearly: {
     accent: '#d97706',
@@ -131,7 +131,7 @@ export function getSectionTheme(section: TaskSection): SectionTheme {
   return SECTION_THEMES[section];
 }
 
-export const SCREEN_PADDING = 16;
+export const SCREEN_PADDING = 5;
 export const FAB_SIZE = 60;
 
 export const STORAGE_KEY = 'lazy_todo_state_v1';

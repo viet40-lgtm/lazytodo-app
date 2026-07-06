@@ -14,6 +14,7 @@ interface TaskListProps {
   onSkip: (id: string) => void;
   onLogTime: (id: string, minutes: number) => void;
   onReorder: (id: string, direction: 'up' | 'down') => void;
+  onManageSubtasks?: (taskId: string) => void;
   emptyText?: string;
 }
 
@@ -27,6 +28,7 @@ function TaskListBase({
   onSkip,
   onLogTime,
   onReorder,
+  onManageSubtasks,
   emptyText = 'Nothing here yet.',
 }: TaskListProps): ReactElement {
   const theme = getSectionTheme(section);
@@ -63,6 +65,7 @@ function TaskListBase({
               onSkip={onSkip}
               onLogTime={onLogTime}
               onReorder={onReorder}
+              onManageSubtasks={onManageSubtasks}
             />
           ))}
         </View>

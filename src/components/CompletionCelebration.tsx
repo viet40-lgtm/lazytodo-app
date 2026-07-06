@@ -39,7 +39,7 @@ export function CompletionCelebration({ show }: CompletionCelebrationProps) {
       ) : null}
       <Text style={styles.emoji}>🎉</Text>
       <Text style={styles.message}>You did enough today.</Text>
-      <Text style={styles.subtext}>Every goal is checked off. Go relax.</Text>
+      <Text style={styles.subtext}>Every task is checked off. Go relax.</Text>
     </View>
   );
 }

@@ -6,6 +6,13 @@ export interface TimeLogEntry {
   minutes: number;
 }
 
+export interface SubTask {
+  id: string;
+  name: string;
+  completed: boolean;
+  completedAt?: number;
+}
+
 export interface Task {
   id: string;
   name: string;
@@ -22,6 +29,8 @@ export interface Task {
    */
   reminderOnly?: boolean;
   persistent?: boolean;
+  /** Optional checklist of sub-tasks. */
+  subtasks?: SubTask[];
   notificationId?: string;
   createdAt: number;
   updatedAt?: number;

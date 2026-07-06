@@ -26,6 +26,7 @@ interface TaskItemProps {
   onSkip: (id: string) => void;
   onLogTime: (id: string, minutes: number) => void;
   onReorder: (id: string, direction: 'up' | 'down') => void;
+  onManageSubtasks?: (taskId: string) => void;
 }
 
 function recurringLabel(recurring?: Task['recurring']): string | null {
@@ -43,11 +44,11 @@ const RECURRING_TO_SECTION: Record<Recurring, TaskSection> = {
 };
 
 const STAT_LABEL: Record<TaskSection, string> = {
-  today: 'Today',
-  daily: 'Today',
-  weekly: 'Week',
-  monthly: 'Month',
-  yearly: 'Year',
+  today: 'T:',
+  daily: 'D:',
+  weekly: 'W:',
+  monthly: 'M:',
+  yearly: 'Y:',
 };
 
 /** Returns per-period time stats for a persistent habit task. */
@@ -93,6 +94,7 @@ function TaskRow({
   onSkip,
   onLogTime,
   onReorder,
+  onManageSubtasks,
 }: TaskItemProps) {
   // Hide the recurring chip when the stats row is visible — it already shows the periods.
   const showsStatsRow = hasRecurring(task) && (task.persistent || (task.timeLogs?.length ?? 0) > 0);
@@ -171,10 +173,23 @@ function TaskRow({
           </View>
         ) : null}
 
-      {/* Time-tracking row \u2014 hidden for reminder tasks */}
+      {/* Time-tracking row — hidden for reminder tasks */}
       {!task.reminderOnly ? (
         <View style={styles.actionRow}>
           <View style={styles.timeBtnGroup}>
+            <Pressable
+              style={[
+                styles.timeBtn,
+                { backgroundColor: (task.subtasks && task.subtasks.length > 0) ? APP_COLORS.headerBg : accentSoft }
+              ]}
+              onPress={() => onManageSubtasks?.(task.id)}
+              hitSlop={4}
+            >
+              <Text style={[
+                styles.timeBtnText,
+                { color: (task.subtasks && task.subtasks.length > 0) ? '#FFFFFF' : accentColor }
+              ]}>Sub-T</Text>
+            </Pressable>
             <Pressable
               style={[styles.timeBtn, { backgroundColor: accentSoft }]}
               onPress={() => onLogTime(task.id, 5)}
@@ -359,7 +374,7 @@ const styles = StyleSheet.create({
   },
   timeBtn: {
     borderRadius: RADIUS.pill,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: 10,
     paddingVertical: SPACING.sm,
   },
   timeBtnText: {
@@ -416,21 +431,17 @@ const styles = StyleSheet.create({
   statChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: SPACING.sm + 2,
-    paddingVertical: 4,
-    borderRadius: RADIUS.pill,
-    borderWidth: 1.5,
-    borderColor: APP_COLORS.border,
-    backgroundColor: APP_COLORS.surfaceMuted,
+    gap: 2,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
   statLabel: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '500',
     color: APP_COLORS.textSubtle,
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },

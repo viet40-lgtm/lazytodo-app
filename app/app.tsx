@@ -10,12 +10,13 @@ import { Quote } from '../src/components/Quote';
 import { SettingsModal } from '../src/components/SettingsModal';
 import { TaskList } from '../src/components/TaskList';
 import { TaskModal } from '../src/components/TaskModal';
+import { SubtaskModal } from '../src/components/SubtaskModal';
 import { APP_COLORS, FAB_SIZE, RADIUS, SCREEN_PADDING, SPACING } from '../src/constants';
 import { getRandomQuote } from '../src/data/quotes';
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';
 import { useTasks } from '../src/hooks/useTasks';
-import type { AppState, Recurring, Task, TaskSection } from '../src/types';
+import type { AppState, Recurring, SubTask, Task, TaskSection } from '../src/types';
 import { hasRecurring, taskShowsInSection } from '../src/utils/recurringList';
 
 const HOME_SECTIONS: TaskSection[] = ['daily', 'today', 'weekly', 'monthly', 'yearly'];
@@ -28,6 +29,7 @@ export default function HomeScreen() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [defaultSection, setDefaultSection] = useState<TaskSection>('today');
+  const [manageSubtasksId, setManageSubtasksId] = useState<string | null>(null);
   const [removeConfirmId, setRemoveConfirmId] = useState<string | null>(null);
 
   const auth = useAuth();
@@ -54,6 +56,7 @@ export default function HomeScreen() {
     deleteTask,
     skipTask,
     reorderTask,
+    toggleSubtask,
     markCelebrated,
     loadFromBackup,
     forceSync,
@@ -129,6 +132,10 @@ export default function HomeScreen() {
     setEditingTask(null);
   }, []);
 
+  const handleSaveSubtasks = useCallback((taskId: string, subtasks: SubTask[]) => {
+    updateTask(taskId, { subtasks: subtasks.length > 0 ? subtasks : undefined });
+  }, [updateTask]);
+
   const handleToggle = useCallback(
     (task: Task) => {
       // Persistent habits just toggle completed — no "remove repeat?" prompt.
@@ -184,6 +191,7 @@ export default function HomeScreen() {
           onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
+          onManageSubtasks={setManageSubtasksId}
           emptyText="Things you do every day."
         />
         <TaskList
@@ -196,7 +204,8 @@ export default function HomeScreen() {
           onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
-          emptyText="No goals yet. Tap + when you're ready."
+          onManageSubtasks={setManageSubtasksId}
+          emptyText="No tasks yet. Tap + when you're ready."
         />
         <TaskList
           section="weekly"
@@ -208,6 +217,7 @@ export default function HomeScreen() {
           onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
+          onManageSubtasks={setManageSubtasksId}
           emptyText="Bigger stuff for this week."
         />
         <TaskList
@@ -220,7 +230,8 @@ export default function HomeScreen() {
           onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
-          emptyText="Goals for this month."
+          onManageSubtasks={setManageSubtasksId}
+          emptyText="Tasks for this month."
         />
         <TaskList
           section="yearly"
@@ -232,7 +243,8 @@ export default function HomeScreen() {
           onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
-          emptyText="Long-term goals. No rush."
+          onToggleSubtask={toggleSubtask}
+          emptyText="Long-term tasks. No rush."
         />
         <Quote text={quote} />
         <Pressable style={styles.completedBtn} onPress={() => setCompletedOpen(true)}>
@@ -249,6 +261,12 @@ export default function HomeScreen() {
         defaultSection={defaultSection}
         onSave={handleSave}
         onClose={closeModal}
+      />
+      <SubtaskModal
+        visible={!!manageSubtasksId}
+        task={manageSubtasksId ? tasks.find(t => t.id === manageSubtasksId) || null : null}
+        onSave={handleSaveSubtasks}
+        onClose={() => setManageSubtasksId(null)}
       />
       <AuthModal
         visible={authOpen}

@@ -29,14 +29,14 @@ const FEATURES = [
   },
   {
     icon: '📋',
-    title: 'Weekly & Monthly Goals',
+    title: 'Weekly & Monthly Tasks',
     desc: 'Bigger tasks that span the week or month. Stay on track without micromanaging.',
     color: '#0284c7',
     bg: '#e0f2fe',
   },
   {
     icon: '⭐',
-    title: 'Yearly Goals',
+    title: 'Yearly Tasks',
     desc: 'Long-term dreams and ambitions. Always visible, never forgotten.',
     color: '#d97706',
     bg: '#fef3c7',
@@ -145,7 +145,7 @@ export default function LandingPage() {
             The lazy way to{'\n'}stay on top of things.
           </Text>
           <Text style={styles.heroSub}>
-            A free, minimalist task manager and daily habit tracker. Organize your daily tasks, weekly goals, and long-term plans — all in one place. No account needed to get started.
+            A free, minimalist task manager and daily habit tracker. Organize your daily tasks, weekly tasks, and long-term plans — all in one place. No account needed to get started.
           </Text>
           <View style={styles.heroCtas}>
             <Pressable

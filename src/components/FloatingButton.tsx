@@ -14,7 +14,7 @@ export function FloatingButton({ onPress, style }: FloatingButtonProps) {
       style={({ pressed }) => [styles.fab, style, pressed && styles.fabPressed]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="Add goal"
+      accessibilityLabel="Add task"
     >
       <View style={styles.iconH} />
       <View style={styles.iconV} />

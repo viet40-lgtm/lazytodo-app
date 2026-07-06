@@ -113,7 +113,7 @@ export function AuthModal({
               ) : null}
             </View>
             <Text style={styles.subtitle}>
-              {loggedIn ? 'Your goals sync across devices.' : 'Please sign in or create an account to continue.'}
+              {loggedIn ? 'Your tasks sync across devices.' : 'Please sign in or create an account to continue.'}
             </Text>
           </View>
 

@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LEGACY_WEB_STORAGE_KEY, STORAGE_KEY } from '../constants';
-import type { AppState, Recurring, Task, TaskSection, TimeLogEntry } from '../types';
-
+import type { AppState, Recurring, SubTask, Task, TaskSection, TimeLogEntry } from '../types';
 
 export class DataCorruptionError extends Error {
   constructor(message: string) {
@@ -55,6 +54,19 @@ function normalizeTimeLogs(raw: unknown, spentMinutes: number, createdAt: number
   return undefined;
 }
 
+function normalizeSubtasks(raw: unknown): SubTask[] | undefined {
+  if (!Array.isArray(raw) || !raw.length) return undefined;
+  const items = raw
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null;
+      const e = entry as Record<string, unknown>;
+      if (typeof e.id !== 'string' || typeof e.name !== 'string') return null;
+      return { id: e.id, name: e.name.trim(), completed: Boolean(e.completed) } as SubTask;
+    })
+    .filter((e): e is SubTask => e !== null && e.name.length > 0);
+  return items.length ? items : undefined;
+}
+
 function normalizeTask(raw: unknown): Task | null {
   if (!raw || typeof raw !== 'object') return null;
   const task = raw as Record<string, unknown>;
@@ -105,6 +117,8 @@ function normalizeTask(raw: unknown): Task | null {
     ...(task.persistent === true ? { persistent: true } : {}),
     // Preserve the reminderOnly flag so reminder tasks survive storage round-trips.
     ...(task.reminderOnly === true ? { reminderOnly: true } : {}),
+    // Preserve sub-tasks.
+    ...(normalizeSubtasks(task.subtasks) ? { subtasks: normalizeSubtasks(task.subtasks) } : {}),
     createdAt,
   };
 }
