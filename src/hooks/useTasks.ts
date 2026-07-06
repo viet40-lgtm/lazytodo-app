@@ -43,6 +43,8 @@ export function useTasks(userId: string | null = null) {
   const reminderSyncRef = useRef(0);
   const stateRef = useRef<AppState | null>(null);
   const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pushingRef = useRef(false);
+  const pendingPushRef = useRef(false);
   stateRef.current = state;
 
   // Load state whenever userId changes.
@@ -76,15 +78,34 @@ export function useTasks(userId: string | null = null) {
     };
   }, [userId]);
 
-  // Persist state changes: cloud for logged-in users, local storage for guests.
+  // Persist state changes to cloud for logged-in users.
   useEffect(() => {
     if (!hydrated || !state) return;
     if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
-    pushTimerRef.current = setTimeout(() => {
-      const currentState = stateRef.current ?? state;
-      if (userId) {
-        pushRemoteState(userId, currentState).catch(() => {});
+    pushTimerRef.current = setTimeout(async () => {
+      if (!userId) return;
+      if (pushingRef.current) {
+        // Another push is in-flight; mark that we need another push after it finishes.
+        pendingPushRef.current = true;
+        return;
       }
+      const doPush = async () => {
+        pushingRef.current = true;
+        pendingPushRef.current = false;
+        try {
+          const snapshot = stateRef.current;
+          if (snapshot) await pushRemoteState(userId, snapshot).catch(() => {});
+        } finally {
+          pushingRef.current = false;
+          if (pendingPushRef.current) {
+            // A state change came in while we were pushing — push once more.
+            pendingPushRef.current = false;
+            const latest = stateRef.current;
+            if (latest) await pushRemoteState(userId, latest).catch(() => {});
+          }
+        }
+      };
+      doPush();
     }, 800);
     return () => {
       if (pushTimerRef.current) clearTimeout(pushTimerRef.current);

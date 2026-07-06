@@ -22,7 +22,7 @@ function normalizeRecurringField(raw: unknown): Recurring[] | undefined {
   return undefined;
 }
 
-function normalizeTimeLogs(raw: unknown, spentMinutes: number, createdAt: number): TimeLogEntry[] | undefined {
+function normalizeTimeLogs(raw: unknown, spentMinutes: number, createdAt: number): TimeLogEntry[] {
   if (Array.isArray(raw)) {
     const logs = raw
       .map((entry) => {
@@ -34,10 +34,11 @@ function normalizeTimeLogs(raw: unknown, spentMinutes: number, createdAt: number
         return { at, minutes };
       })
       .filter((e): e is TimeLogEntry => e !== null);
-    if (logs.length) return logs;
+    // Return the validated array even if empty — callers decide whether to include it.
+    return logs;
   }
   if (spentMinutes > 0) return [{ at: createdAt, minutes: spentMinutes }];
-  return undefined;
+  return [];
 }
 
 function normalizeSubtasks(raw: unknown): SubTask[] | undefined {
@@ -84,6 +85,9 @@ function normalizeTask(raw: unknown): Task | null {
       : 0;
 
   const timeLogs = normalizeTimeLogs(task.timeLogs, spentMinutes, createdAt);
+  // Always preserve timeLogs for recurring tasks (even empty) so the habit
+  // detection logic (timeLogs.length > 0) works after a cloud round-trip.
+  const shouldIncludeTimeLogs = timeLogs.length > 0 || !!recurring;
 
   return {
     id: task.id,
@@ -96,7 +100,7 @@ function normalizeTask(raw: unknown): Task | null {
       : {}),
     ...(typeof task.reminder === 'string' && task.reminder ? { reminder: task.reminder } : {}),
     ...(recurring ? { recurring } : {}),
-    ...(timeLogs ? { timeLogs } : {}),
+    ...(shouldIncludeTimeLogs ? { timeLogs } : {}),
     ...(typeof task.notificationId === 'string' ? { notificationId: task.notificationId } : {}),
     ...(parseTimestamp(task.showAfter) !== undefined ? { showAfter: parseTimestamp(task.showAfter) } : {}),
     ...(typeof task.order === 'number' ? { order: task.order } : {}),

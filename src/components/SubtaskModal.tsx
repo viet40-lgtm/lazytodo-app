@@ -159,7 +159,13 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
               >
                 <Text style={[styles.headerSaveText, hasChanges && { color: APP_COLORS.delete }]}>Save</Text>
               </Pressable>
-              <Pressable hitSlop={12} onPress={onClose} style={styles.closeBtn}>
+              <Pressable hitSlop={12} onPress={() => {
+                // Auto-save any unsaved changes when the user hits X
+                if (task && hasChanges) {
+                  onSave(task.id, subtasks.length > 0 ? subtasks : []);
+                }
+                onClose();
+              }} style={styles.closeBtn}>
                 <Text style={styles.closeText}>X</Text>
               </Pressable>
             </View>
