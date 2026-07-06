@@ -61,7 +61,14 @@ function normalizeSubtasks(raw: unknown): SubTask[] | undefined {
       if (!entry || typeof entry !== 'object') return null;
       const e = entry as Record<string, unknown>;
       if (typeof e.id !== 'string' || typeof e.name !== 'string') return null;
-      return { id: e.id, name: e.name.trim(), completed: Boolean(e.completed) } as SubTask;
+      return { 
+        id: e.id, 
+        name: e.name.trim(), 
+        completed: Boolean(e.completed),
+        timeSpent: typeof e.timeSpent === 'number' ? e.timeSpent : undefined,
+        createdAt: typeof e.createdAt === 'number' ? e.createdAt : undefined,
+        completedAt: typeof e.completedAt === 'number' ? e.completedAt : undefined
+      } as SubTask;
     })
     .filter((e): e is SubTask => e !== null && e.name.length > 0);
   return items.length ? items : undefined;
