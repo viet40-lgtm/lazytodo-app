@@ -194,7 +194,7 @@ const staticHtml = `
   </div>
 `;
 
-html = html.replace('<div id="root"></div>', `<div id="root">${staticHtml}</div>`);
+html = html.replace('<div id="root"></div>', `<div id="root"></div>\n<noscript>${staticHtml}</noscript>`);
 
 fs.writeFileSync(distHtml, html, 'utf8');
 console.log('✅  SEO tags and static HTML injected into dist/index.html');
