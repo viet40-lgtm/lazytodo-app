@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     borderColor: APP_COLORS.primary,
   },
   metaSkipText: {
-    fontSize: 20,
+    fontSize: 23,
     fontWeight: '600',
     color: APP_COLORS.primary,
   },
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   metaText: {
-    fontSize: 20,
+    fontSize: 23,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -378,14 +378,14 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   timeBtnText: {
-    fontSize: 20,
+    fontSize: 23,
     fontWeight: '700',
   },
   spentChip: {
     paddingVertical: SPACING.sm,
   },
   spentText: {
-    fontSize: 20,
+    fontSize: 23,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   createdText: {
-    fontSize: 20,
+    fontSize: 23,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
   },
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   webDeleteText: {
-    fontSize: 20,
+    fontSize: 23,
     lineHeight: 25,
     color: APP_COLORS.delete,
     fontWeight: '700',
@@ -436,12 +436,12 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   statLabel: {
-    fontSize: 20,
+    fontSize: 23,
     fontWeight: '500',
     color: APP_COLORS.textSubtle,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 23,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },

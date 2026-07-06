@@ -34,7 +34,10 @@ export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalPro
 
   useEffect(() => {
     if (visible && task) {
-      setSubtasks(task.subtasks ?? []);
+      const initial = task.subtasks ?? [];
+      const active = initial.filter(st => !st.completed);
+      const completed = initial.filter(st => st.completed);
+      setSubtasks([...active, ...completed]);
       setInput('');
       const timer = setTimeout(() => inputRef.current?.focus(), 100);
       return () => clearTimeout(timer);
@@ -98,8 +101,8 @@ export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalPro
         <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.title}>Sub-tasks</Text>
-              <Text style={styles.subtitle} numberOfLines={1}>{task.name}</Text>
+              <Text style={styles.title} numberOfLines={1}>{task.name}</Text>
+              <Text style={styles.subtitle}>Sub-tasks</Text>
             </View>
             <Pressable hitSlop={12} onPress={onClose} style={styles.closeBtn}>
               <Text style={styles.closeText}>X</Text>
