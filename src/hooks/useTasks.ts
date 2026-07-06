@@ -146,8 +146,8 @@ export function useTasks(userId: string | null = null) {
 
   const updateTasks = useCallback((updater: (tasks: Task[]) => Task[]) => {
     setState((prev) => {
-      if (!prev) return prev;
-      return { ...prev, tasks: sortTasks(updater(prev.tasks)), savedAt: Date.now() };
+      const current = prev ?? { tasks: [], savedAt: Date.now() };
+      return { ...current, tasks: sortTasks(updater(current.tasks)), savedAt: Date.now() };
     });
   }, []);
 

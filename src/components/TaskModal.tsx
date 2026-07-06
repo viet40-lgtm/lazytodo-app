@@ -216,6 +216,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                 placeholderTextColor={APP_COLORS.textSubtle}
                 value={name}
                 onChangeText={setName}
+                onSubmitEditing={handleSave}
                 returnKeyType="done"
               />
             </View>
