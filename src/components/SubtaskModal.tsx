@@ -48,7 +48,16 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
   const initialActive = originalSubtasks.filter(st => !st.completed);
   const initialCompleted = originalSubtasks.filter(st => st.completed);
   const normalizedInitial = [...initialActive, ...initialCompleted];
-  const hasChanges = JSON.stringify(subtasks) !== JSON.stringify(normalizedInitial);
+  
+  const hasChanges = subtasks.length !== normalizedInitial.length || subtasks.some((st, i) => {
+    const init = normalizedInitial[i];
+    return st.id !== init.id ||
+           st.name !== init.name ||
+           st.completed !== init.completed ||
+           st.timeSpent !== init.timeSpent ||
+           st.createdAt !== init.createdAt ||
+           st.completedAt !== init.completedAt;
+  });
 
   const handleAdd = () => {
     const text = input.trim();
