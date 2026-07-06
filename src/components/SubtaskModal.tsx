@@ -41,8 +41,6 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
       const completed = initial.filter(st => st.completed);
       setSubtasks([...active, ...completed]);
       setInput('');
-      const timer = setTimeout(() => inputRef.current?.focus(), 100);
-      return () => clearTimeout(timer);
     }
   }, [visible, task?.id]);
 
