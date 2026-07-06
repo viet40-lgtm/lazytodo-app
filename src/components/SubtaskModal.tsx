@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_COLORS, RADIUS, SPACING, softShadow, SCREEN_PADDING } from '../constants';
 import type { SubTask, Task } from '../types';
 import { nanoid } from 'nanoid/non-secure';
+import { formatDuration } from '../utils/time';
 
 interface SubtaskModalProps {
   visible: boolean;
@@ -23,7 +24,7 @@ interface SubtaskModalProps {
 }
 
 export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalProps) {
-  function formatCompletedDate(ts?: number) {
+  function formatDate(ts?: number) {
     if (!ts) return '';
     const d = new Date(ts);
     return `${d.getMonth() + 1}/${d.getDate()}`;
@@ -47,7 +48,13 @@ export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalPro
   const handleAdd = () => {
     const text = input.trim();
     if (!text) return;
-    setSubtasks([...subtasks, { id: nanoid(), name: text, completed: false }]);
+    setSubtasks([...subtasks, { 
+      id: nanoid(), 
+      name: text, 
+      completed: false,
+      createdAt: Date.now(),
+      timeSpent: 0
+    }]);
     setInput('');
   };
 
@@ -87,6 +94,12 @@ export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalPro
     }
   };
 
+  const handleLogTime = (id: string, mins: number) => {
+    setSubtasks((prev) => prev.map(st => 
+      st.id === id ? { ...st, timeSpent: (st.timeSpent || 0) + mins } : st
+    ));
+  };
+
   const handleSave = () => {
     if (!task) return;
     onSave(task.id, subtasks.length > 0 ? subtasks : []);
@@ -112,31 +125,58 @@ export function SubtaskModal({ visible, task, onSave, onClose }: SubtaskModalPro
             <View style={styles.subtaskList}>
               {subtasks.map((st) => (
                 <View key={st.id} style={styles.subtaskRow}>
-                  <Pressable
-                    style={styles.subtaskCheckbox}
-                    onPress={() => handleToggle(st.id)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: st.completed }}
-                  >
-                    {st.completed ? <Text style={styles.subtaskCheckmark}>✓</Text> : null}
-                  </Pressable>
-                  <View style={styles.subtaskNameCol}>
-                    <Text style={[styles.subtaskName, st.completed && styles.subtaskNameDone]}>
-                      {st.name}
-                    </Text>
-                    {st.completed && st.completedAt ? (
-                      <Text style={styles.subtaskDate}>{formatCompletedDate(st.completedAt)}</Text>
-                    ) : null}
-                  </View>
-                  <View style={styles.corner}>
-                    <View style={styles.sortArrows}>
-                      <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => handleMoveUp(st.id)}>
-                        <Text style={styles.arrowText}>↑</Text>
+                  <View style={styles.subtaskRowTop}>
+                    <Pressable
+                      style={styles.subtaskCheckbox}
+                      onPress={() => handleToggle(st.id)}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: st.completed }}
+                    >
+                      {st.completed ? <Text style={styles.subtaskCheckmark}>✓</Text> : null}
+                    </Pressable>
+                    <View style={styles.subtaskNameCol}>
+                      <Text style={[styles.subtaskName, st.completed && styles.subtaskNameDone]}>
+                        {st.name}
+                      </Text>
+                    </View>
+                    <View style={styles.corner}>
+                      <View style={styles.sortArrows}>
+                        <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => handleMoveUp(st.id)}>
+                          <Text style={styles.arrowText}>↑</Text>
+                        </Pressable>
+                      </View>
+                      <Pressable style={styles.subtaskDelete} onPress={() => handleRemove(st.id)} hitSlop={8}>
+                        <Text style={styles.subtaskDeleteText}>X</Text>
                       </Pressable>
                     </View>
-                    <Pressable style={styles.subtaskDelete} onPress={() => handleRemove(st.id)} hitSlop={8}>
-                      <Text style={styles.subtaskDeleteText}>X</Text>
-                    </Pressable>
+                  </View>
+                  <View style={styles.actionRow}>
+                    <View style={styles.timeBtnGroup}>
+                      <Pressable
+                        style={styles.timeBtn}
+                        onPress={() => handleLogTime(st.id, 5)}
+                        hitSlop={4}
+                      >
+                        <Text style={styles.timeBtnText}>+5m</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.timeBtn}
+                        onPress={() => handleLogTime(st.id, 30)}
+                        hitSlop={4}
+                      >
+                        <Text style={styles.timeBtnText}>+30m</Text>
+                      </Pressable>
+                    </View>
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <View style={styles.spentChip}>
+                        <Text style={styles.spentText}>{formatDuration(st.timeSpent || 0)}</Text>
+                      </View>
+                    </View>
+                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                      <View style={styles.spentChip}>
+                        <Text style={styles.createdText}>{formatDate(st.completedAt || st.createdAt || Date.now())}</Text>
+                      </View>
+                    </View>
                   </View>
                 </View>
               ))}
@@ -232,14 +272,52 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   subtaskRow: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    padding: SCREEN_PADDING,
+    backgroundColor: APP_COLORS.surface,
+    borderRadius: RADIUS.xl,
+    ...softShadow(0.04, 8, 3),
+  },
+  subtaskRowTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: SPACING.md,
-    backgroundColor: APP_COLORS.surface,
-    borderRadius: RADIUS.md,
-    gap: SPACING.md,
-    ...softShadow,
+    gap: 5,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: SPACING.md,
+  },
+  timeBtnGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  timeBtn: {
+    borderRadius: RADIUS.pill,
+    backgroundColor: '#cffafe',
+    paddingHorizontal: 10,
+    paddingVertical: SPACING.sm,
+  },
+  timeBtnText: {
+    fontSize: 23,
+    fontWeight: '700',
+    color: '#0891b2',
+  },
+  spentChip: {
+    paddingVertical: SPACING.sm,
+  },
+  spentText: {
+    fontSize: 23,
+    fontWeight: '700',
+    color: APP_COLORS.textMuted,
+  },
+  createdText: {
+    fontSize: 23,
+    fontWeight: '600',
+    color: APP_COLORS.textSubtle,
   },
   subtaskCheckbox: {
     width: 36,

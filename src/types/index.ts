@@ -11,6 +11,8 @@ export interface SubTask {
   name: string;
   completed: boolean;
   completedAt?: number;
+  timeSpent?: number;
+  createdAt?: number;
 }
 
 export interface Task {
