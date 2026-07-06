@@ -97,7 +97,13 @@ export function useTasks(userId: string | null = null) {
     let active = true;
     const channel = subscribeToRemoteState(userId, (remote) => {
       if (!active) return;
-      setState(remote);
+      setState((prev) => {
+        // Ignore incoming remote state if we have newer local changes pending.
+        if (prev && prev.savedAt > remote.savedAt) {
+          return prev;
+        }
+        return remote;
+      });
     });
     return () => {
       active = false;
