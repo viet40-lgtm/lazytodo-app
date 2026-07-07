@@ -39,7 +39,6 @@ export function recurringLabelShort(recurring: Recurring[]): string {
   const labels: Record<Recurring, string> = {
     daily: 'D',
     weekly: 'W',
-    biweekly: 'B-W',
     monthly: 'M',
     yearly: 'Y',
   };

@@ -28,7 +28,6 @@ function periodStart(recurring: Recurring, date: Date): Date {
     case 'daily':
       return startOfDay(date);
     case 'weekly':
-    case 'biweekly':
       return startOfWeek(date);
     case 'monthly':
       return startOfMonth(date);
@@ -56,14 +55,7 @@ export function nextPeriodStart(recurring: Recurring, from = new Date()): number
       d.setHours(0, 0, 0, 0);
       return d.getTime();
     }
-    case 'biweekly': {
-      const d = new Date(from);
-      const day = d.getDay();
-      const daysUntilMonday = day === 0 ? 1 : 8 - day;
-      d.setDate(d.getDate() + daysUntilMonday + 7);
-      d.setHours(0, 0, 0, 0);
-      return d.getTime();
-    }
+
     case 'monthly': {
       return new Date(from.getFullYear(), from.getMonth() + 1, 1).getTime();
     }
@@ -83,9 +75,7 @@ export function advanceReminder(reminderIso: string, recurring: Recurring): stri
     case 'weekly':
       d.setDate(d.getDate() + 7);
       break;
-    case 'biweekly':
-      d.setDate(d.getDate() + 14);
-      break;
+
     case 'monthly':
       d.setMonth(d.getMonth() + 1);
       break;

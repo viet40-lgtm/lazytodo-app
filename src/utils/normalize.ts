@@ -9,7 +9,7 @@ function parseTimestamp(value: unknown): number | undefined {
   return undefined;
 }
 
-const VALID_RECURRING: Recurring[] = ['daily', 'weekly', 'biweekly', 'monthly', 'yearly'];
+const VALID_RECURRING: Recurring[] = ['daily', 'weekly', 'monthly', 'yearly'];
 
 function normalizeRecurringField(raw: unknown): Recurring[] | undefined {
   if (Array.isArray(raw)) {

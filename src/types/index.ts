@@ -1,4 +1,4 @@
-export type Recurring = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly';
+export type Recurring = 'daily' | 'weekly' | 'monthly' | 'yearly';
 export type TaskSection = 'today' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface TimeLogEntry {

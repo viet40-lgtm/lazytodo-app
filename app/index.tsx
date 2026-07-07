@@ -90,7 +90,7 @@ const FAQS = [
   },
   {
     q: 'Does it support recurring tasks?',
-    a: 'Yes. You can set tasks to repeat daily, weekly, biweekly, monthly, or yearly. Recurring tasks spawn the next occurrence automatically when completed or skipped.',
+    a: 'Yes. You can set tasks to repeat daily, weekly, monthly, or yearly. Recurring tasks spawn the next occurrence automatically when completed or skipped.',
   },
   {
     q: 'Can I set reminders?',

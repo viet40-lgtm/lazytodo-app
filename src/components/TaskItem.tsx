@@ -38,7 +38,6 @@ function recurringLabel(recurring?: Task['recurring']): string | null {
 const RECURRING_TO_SECTION: Record<Recurring, TaskSection> = {
   daily: 'daily',
   weekly: 'weekly',
-  biweekly: 'weekly',
   monthly: 'monthly',
   yearly: 'yearly',
 };

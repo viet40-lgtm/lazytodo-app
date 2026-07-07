@@ -44,7 +44,6 @@ const SECTION_OPTIONS: TaskSection[] = ['today', 'weekly', 'monthly', 'yearly'];
 const REPEAT_OPTIONS: { value: Recurring; label: string }[] = [
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Week' },
-  { value: 'biweekly', label: 'Bi-Week' },
   { value: 'monthly', label: 'Month' },
   { value: 'yearly', label: 'Year' },
 ];
@@ -54,7 +53,6 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
   const [section, setSection] = useState<TaskSection>(task?.section ?? defaultSection);
   const [reminder, setReminder] = useState(task?.reminder ?? '');
   const [recurring, setRecurring] = useState<Recurring[]>([]);
-  const [persistent, setPersistent] = useState(task?.persistent ?? false);
   const [reminderOnly, setReminderOnly] = useState(task?.reminderOnly ?? false);
   const inputRef = useRef<TextInput>(null);
 
@@ -65,8 +63,6 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
     setReminder(task?.reminder ?? '');
     const rec = normalizeRecurring(task?.recurring);
     setRecurring(rec);
-    // Default persistent to true when a recurring task is being created/edited.
-    setPersistent(task?.persistent ?? false);
     setReminderOnly(task?.reminderOnly ?? false);
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
@@ -107,7 +103,6 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
     section !== (task?.section ?? defaultSection) ||
     reminder !== (task?.reminder ?? '') ||
     JSON.stringify(recurring) !== JSON.stringify(normalizeRecurring(task?.recurring)) ||
-    persistent !== (task?.persistent ?? false) ||
     reminderOnly !== (task?.reminderOnly ?? false)
   );
 
@@ -116,9 +111,6 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
       ? recurring.filter((r) => r !== value)
       : [...recurring, value];
     setRecurring(next);
-    // Keep persistent in sync — enable on first pick, disable when none left.
-    if (next.length > 0 && !persistent) setPersistent(true);
-    if (next.length === 0) setPersistent(false);
   };
 
   const handleSave = () => {
@@ -128,7 +120,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
       section: !reminderOnly && recurring.includes('daily') ? 'daily' : section,
       reminder: reminder || undefined,
       recurring: !reminderOnly && recurring.length ? recurring : undefined,
-      persistent: !reminderOnly && recurring.length > 0 && persistent ? true : undefined,
+      persistent: task?.persistent,
       reminderOnly: reminderOnly || undefined,
     });
     onClose();
@@ -269,31 +261,6 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                     })}
                   </View>
                 </View>
-
-                {recurring.length > 0 ? (
-                  // When repeat is selected, show the Persistent Habit toggle.
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Mode</Text>
-                    <Pressable
-                      style={[styles.persistentRow, persistent && styles.persistentRowOn]}
-                      onPress={() => setPersistent((v) => !v)}
-                      accessibilityRole="switch"
-                      accessibilityState={{ checked: persistent }}
-                    >
-                      <View style={[styles.persistentDot, persistent && styles.persistentDotOn]} />
-                      <View style={styles.persistentText}>
-                        <Text style={[styles.persistentTitle, persistent && styles.persistentTitleOn]}>
-                          {persistent ? '🔁  Persistent habit' : '🔗  One-time chain'}
-                        </Text>
-                        <Text style={styles.persistentDesc}>
-                          {persistent
-                            ? 'One task, always there. Tracks time across all periods.'
-                            : 'Spawns a new copy each period when completed.'}
-                        </Text>
-                      </View>
-                    </Pressable>
-                  </View>
-                ) : null}
               </>
             ) : null}
           </ScrollView>
@@ -515,50 +482,6 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: '600',
   },
-  persistentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
-    borderWidth: 2,
-    borderColor: APP_COLORS.border,
-    backgroundColor: APP_COLORS.surface,
-  },
-  persistentRowOn: {
-    borderColor: APP_COLORS.primary,
-    backgroundColor: SECTION_THEMES.daily.accentSoft,
-  },
-  persistentDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2.5,
-    borderColor: APP_COLORS.textSubtle,
-    backgroundColor: APP_COLORS.surface,
-  },
-  persistentDotOn: {
-    borderColor: APP_COLORS.primary,
-    backgroundColor: APP_COLORS.primary,
-  },
-  persistentText: {
-    flex: 1,
-    gap: 2,
-  },
-  persistentTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: APP_COLORS.textMuted,
-  },
-  persistentTitleOn: {
-    color: APP_COLORS.primaryDark,
-  },
-  persistentDesc: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: APP_COLORS.textSubtle,
-    lineHeight: 20,
-  },
+
 });
 

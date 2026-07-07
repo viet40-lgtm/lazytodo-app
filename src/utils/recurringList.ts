@@ -12,14 +12,14 @@ export function hasRecurring(task: { recurring?: Recurring | Recurring[] }): boo
 const SECTION_REPEAT: Record<TaskSection, Recurring[]> = {
   today: [],
   daily: ['daily'],
-  weekly: ['weekly', 'biweekly'],
+  weekly: ['weekly'],
   monthly: ['monthly'],
   yearly: ['yearly'],
 };
 
 /**
  * For persistent habits, the "home" section is the shortest period in the recurring array.
- * Priority: daily > weekly/biweekly > monthly > yearly.
+ * Priority: daily > weekly > monthly > yearly.
  * The stats row on the card handles cross-period time totals, so there's no need to
  * duplicate the card in every matching section.
  */
