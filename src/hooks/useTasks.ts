@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AppState, Task } from '../types';
 import { pushRemoteState, pullRemoteState, subscribeToRemoteState } from '../services/cloud';
 import { syncReminders } from '../services/reminders';
-import { isTaskOverdue } from '../utils/recurring';
 import { isQueuedSuccessor } from '../utils/series';
 import { hasRecurring, normalizeRecurring } from '../utils/recurringList';
 import {
@@ -267,30 +266,7 @@ export function useTasks(userId: string | null = null) {
     [updateTasks],
   );
 
-  const skipTask = useCallback(
-    (id: string) => {
-      updateTasks((tasks) => {
-        const target = tasks.find((t) => t.id === id);
-        if (!target) return tasks;
 
-        // Persistent habits can't be skipped — they live forever.
-        if (target.persistent) return tasks;
-
-        const remaining = tasks.map((t) =>
-          t.id === id ? { ...t, deleted: true, updatedAt: Date.now() } : t,
-        );
-
-        if (target.recurring && normalizeRecurring(target.recurring).length === 1) {
-          const alreadyQueued = tasks.some((t) => isQueuedSuccessor(t, target));
-          if (!alreadyQueued) {
-            remaining.push(spawnNextOccurrence(target));
-          }
-        }
-        return remaining;
-      });
-    },
-    [updateTasks],
-  );
 
   const reorderTask = useCallback(
     (id: string, direction: 'up' | 'down') => {
@@ -352,33 +328,7 @@ export function useTasks(userId: string | null = null) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
-  // Batch overdue auto-skip in a single state update.
-  useEffect(() => {
-    if (!hydrated || !state) return;
-    const now = Date.now();
-    // Never auto-skip persistent habits or tasks that already have time logged —
-    // they are treated as permanent habits and must be manually managed.
-    const overdueIds = state.tasks
-      .filter((t) =>
-        !t.completed &&
-        !t.deleted &&
-        !t.persistent &&
-        !(t.timeLogs?.length) &&
-        t.recurring &&
-        isTaskOverdue(t, now)
-      )
-      .map((t) => t.id);
-    if (overdueIds.length === 0) return;
-    updateTasks((tasks: Task[]) =>
-      tasks.flatMap((task: Task) => {
-        if (!overdueIds.includes(task.id)) return [task];
-        const skipped = { ...task, deleted: true, updatedAt: Date.now() };
-        if (!task.recurring || normalizeRecurring(task.recurring).length !== 1) return [skipped];
-        return [skipped, spawnNextOccurrence(task)];
-      }),
-    );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
+
 
   // Memoize sorted task list.
   const tasks = useMemo(() => sortTasks(state?.tasks ?? []), [state?.tasks]);
@@ -401,7 +351,6 @@ export function useTasks(userId: string | null = null) {
     logTime,
     toggleTask,
     deleteTask,
-    skipTask,
     reorderTask,
     markCelebrated,
     forceSync,

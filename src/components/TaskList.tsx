@@ -11,7 +11,6 @@ interface TaskListProps {
   onToggle: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
-  onSkip: (id: string) => void;
   onLogTime: (id: string, minutes: number) => void;
   onReorder: (id: string, direction: 'up' | 'down') => void;
   onManageSubtasks?: (taskId: string) => void;
@@ -25,7 +24,6 @@ function TaskListBase({
   onToggle,
   onEdit,
   onDelete,
-  onSkip,
   onLogTime,
   onReorder,
   onManageSubtasks,
@@ -62,7 +60,6 @@ function TaskListBase({
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
-              onSkip={onSkip}
               onLogTime={onLogTime}
               onReorder={onReorder}
               onManageSubtasks={onManageSubtasks}

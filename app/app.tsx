@@ -54,7 +54,6 @@ export default function HomeScreen() {
     logTime,
     toggleTask,
     deleteTask,
-    skipTask,
     reorderTask,
     markCelebrated,
     forceSync,
@@ -183,7 +182,6 @@ export default function HomeScreen() {
           onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={deleteTask}
-          onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
           onManageSubtasks={setManageSubtasksId}
@@ -196,7 +194,6 @@ export default function HomeScreen() {
           onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={deleteTask}
-          onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
           onManageSubtasks={setManageSubtasksId}
@@ -209,7 +206,6 @@ export default function HomeScreen() {
           onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={deleteTask}
-          onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
           onManageSubtasks={setManageSubtasksId}
@@ -222,7 +218,6 @@ export default function HomeScreen() {
           onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={deleteTask}
-          onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
           onManageSubtasks={setManageSubtasksId}
@@ -235,7 +230,6 @@ export default function HomeScreen() {
           onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={deleteTask}
-          onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
           onManageSubtasks={setManageSubtasksId}

@@ -86,22 +86,4 @@ export function advanceReminder(reminderIso: string, recurring: Recurring): stri
   return d.toISOString();
 }
 
-/** Determines if a recurring task is past its due date (and should be auto-skipped) */
-export function isTaskOverdue(task: Task, now = Date.now()): boolean {
-  const repeats = normalizeRecurring(task.recurring);
-  if (repeats.length !== 1) return false;
-  const recurring = repeats[0];
 
-  if (task.reminder) {
-    // Overdue if past midnight of the reminder day
-    const reminderDate = new Date(task.reminder);
-    reminderDate.setHours(23, 59, 59, 999);
-    return now > reminderDate.getTime();
-  }
-
-  // No reminder. Overdue if past the start of the NEXT natural period.
-  // The task's "current" period is anchored by showAfter or createdAt.
-  const anchor = task.showAfter || task.createdAt;
-  const deadline = nextPeriodStart(recurring, new Date(anchor));
-  return now >= deadline;
-}

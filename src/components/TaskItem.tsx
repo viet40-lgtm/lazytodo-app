@@ -23,7 +23,6 @@ interface TaskItemProps {
   onToggle: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
-  onSkip: (id: string) => void;
   onLogTime: (id: string, minutes: number) => void;
   onReorder: (id: string, direction: 'up' | 'down') => void;
   onManageSubtasks?: (taskId: string) => void;
@@ -52,17 +51,12 @@ const STAT_LABEL: Record<TaskSection, string> = {
 
 /** Returns per-period time stats for a persistent habit task. */
 function getHabitStats(task: Task): { label: string; mins: number; section: TaskSection }[] {
-  const recurring = normalizeRecurring(task.recurring);
-  const seen = new Set<TaskSection>();
-  const result: { label: string; mins: number; section: TaskSection }[] = [];
-  for (const r of recurring) {
-    const section = RECURRING_TO_SECTION[r];
-    if (seen.has(section)) continue;
-    seen.add(section);
-    result.push({ label: STAT_LABEL[section], mins: minutesForSection(task, section), section });
-  }
-  const order = ['daily', 'weekly', 'monthly', 'yearly'];
-  return result.sort((a, b) => order.indexOf(a.section) - order.indexOf(b.section));
+  if (!hasRecurring(task)) return [];
+  return [
+    { label: 'W:', mins: minutesForSection(task, 'weekly'), section: 'weekly' },
+    { label: 'M:', mins: minutesForSection(task, 'monthly'), section: 'monthly' },
+    { label: 'Y:', mins: minutesForSection(task, 'yearly'), section: 'yearly' },
+  ];
 }
 
 function formatReminder(reminder: string): string {
@@ -91,7 +85,6 @@ function TaskRow({
   onToggle,
   onEdit,
   onDelete,
-  onSkip,
   onLogTime,
   onReorder,
   onManageSubtasks,
@@ -218,27 +211,25 @@ function TaskRow({
           {/* Other stats (W/M/Y) */}
           {showsStatsRow && (
             <View style={styles.otherStatsRow}>
-              {getHabitStats(task)
-                .filter((s) => s.section !== 'daily')
-                .map(({ label, mins, section }) => (
-                  <View
-                    key={section}
-                    style={[
-                      styles.statChip,
-                      section === listSection && { borderColor: accentColor },
-                    ]}
-                  >
-                    <Text style={styles.statLabel}>{label}</Text>
-                    <Text style={[styles.statValue, mins > 0 && { color: accentColor }]}>
-                      {formatDuration(mins)}
-                    </Text>
-                  </View>
-                ))}
+              {getHabitStats(task).map(({ label, mins, section }) => (
+                <View
+                  key={section}
+                  style={[
+                    styles.statChip,
+                    section === listSection && { borderColor: accentColor },
+                  ]}
+                >
+                  <Text style={styles.statLabel}>{label}</Text>
+                  <Text style={[styles.statValue, mins > 0 && { color: accentColor }]}>
+                    {formatDuration(mins)}
+                  </Text>
+                </View>
+              ))}
             </View>
           )}
 
-          {/* Reminder / skip on the right */}
-          {(hasMeta || hasRecurring(task)) && (
+          {/* Reminder / metadata on the right */}
+          {hasMeta && (
             <View style={styles.metaContainer}>
               <Pressable style={styles.metaRowContent} onPress={() => onEdit(task)}>
                 {task.reminder ? (
@@ -252,16 +243,6 @@ function TaskRow({
                   </View>
                 ) : null}
               </Pressable>
-              {hasRecurring(task) && !task.persistent && !(task.timeLogs?.length) ? (
-                <Pressable
-                  style={styles.metaSkipBtn}
-                  onPress={() => onSkip(task.id)}
-                  accessibilityLabel={`Skip ${task.name}`}
-                  hitSlop={6}
-                >
-                  <Text style={styles.metaSkipText}>Skip</Text>
-                </Pressable>
-              ) : null}
             </View>
           )}
         </View>
@@ -406,19 +387,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.sm,
     flex: 1,
-  },
-  metaSkipBtn: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 4,
-    borderRadius: RADIUS.pill,
-    backgroundColor: APP_COLORS.surfaceMuted,
-    borderWidth: 1.5,
-    borderColor: APP_COLORS.primary,
-  },
-  metaSkipText: {
-    fontSize: 23,
-    fontWeight: '600',
-    color: APP_COLORS.primary,
   },
   metaChip: {
     backgroundColor: APP_COLORS.surfaceMuted,
