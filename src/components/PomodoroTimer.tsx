@@ -105,28 +105,18 @@ export function PomodoroTimer() {
   const [secsLeft, setSecsLeft] = useState(WORK_SECS);
   const [running, setRunning] = useState(false);
   const [cycles, setCycles] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  
-  const phaseRef = useRef<Phase>('work');
-  phaseRef.current = phase;
-  
-  const secsLeftRef = useRef(secsLeft);
-  secsLeftRef.current = secsLeft;
 
   const totalSecs = phase === 'work' ? WORK_SECS : BREAK_SECS;
   const progress = secsLeft / totalSecs;
 
   useEffect(() => {
-    if (!running) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
-    }
-    intervalRef.current = setInterval(() => {
-      const nextSecs = secsLeftRef.current - 1;
-      if (nextSecs <= 0) {
-        const finishedPhase = phaseRef.current;
+    if (!running) return;
+
+    const timer = setTimeout(() => {
+      if (secsLeft <= 1) {
+        const finishedPhase = phase;
         triggerBeeps(finishedPhase === 'work' ? 5 : 3);
-        
+
         if (finishedPhase === 'work') {
           setPhase('break');
           setSecsLeft(BREAK_SECS);
@@ -136,13 +126,12 @@ export function PomodoroTimer() {
           setSecsLeft(WORK_SECS);
         }
       } else {
-        setSecsLeft(nextSecs);
+        setSecsLeft((prev) => prev - 1);
       }
     }, 1000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [running]);
+
+    return () => clearTimeout(timer);
+  }, [running, secsLeft, phase]);
 
   const handleReset = useCallback(() => {
     setRunning(false);
