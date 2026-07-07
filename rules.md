@@ -13,3 +13,6 @@ This file contains strict guidelines and preferences for the development of the 
 ## 3. Recurring Logic
 - "Daily", "Weekly", "Monthly", and "Yearly" tasks are anchored to natural calendar resets (e.g. Midnight, Monday, the 1st of the month, Jan 1st) and do NOT require a strict Reminder time.
 - "Bi-Weekly" tasks require an anchor. When skipped or checked off, they anchor to the Monday of the week that occurs 14 days later.
+
+## 4. Git Commits and Pushes
+- **No Auto-Commits/Pushes**: NEVER commit or push code to git unless the user explicitly asks you to do so in the chat.
