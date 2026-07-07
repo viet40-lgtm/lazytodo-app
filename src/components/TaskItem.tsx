@@ -209,10 +209,7 @@ function TaskRow({
               D:
             </Text>
             <Text style={[styles.statValue, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '800' }]}>
-              {(() => {
-                const dailyMins = hasRecurring(task) ? minutesForSection(task, 'daily') : task.spentMinutes;
-                return dailyMins > 0 ? formatDuration(dailyMins) : (hasRecurring(task) ? '—' : '0:00');
-              })()}
+              {formatDuration(hasRecurring(task) ? minutesForSection(task, 'daily') : task.spentMinutes)}
             </Text>
           </View>
         </View>
@@ -234,7 +231,7 @@ function TaskRow({
                   >
                     <Text style={styles.statLabel}>{label}</Text>
                     <Text style={[styles.statValue, mins > 0 && { color: accentColor }]}>
-                      {mins > 0 ? formatDuration(mins) : '—'}
+                      {formatDuration(mins)}
                     </Text>
                   </View>
                 ))}
@@ -387,8 +384,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     marginTop: 4,
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
+    gap: SPACING.xs,
   },
   bottomRowRight: {
     flexDirection: 'row',
