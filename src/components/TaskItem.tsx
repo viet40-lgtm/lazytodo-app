@@ -97,7 +97,7 @@ function TaskRow({
   onManageSubtasks,
 }: TaskItemProps) {
   // Hide the recurring chip when the stats row is visible — it already shows the periods.
-  const showsStatsRow = hasRecurring(task) && (task.persistent || (task.timeLogs?.length ?? 0) > 0);
+  const showsStatsRow = hasRecurring(task);
   const repeat = showsStatsRow ? null : recurringLabel(task.recurring);
   const done = task.completed;
   const hasMeta = Boolean(task.reminder || repeat);
