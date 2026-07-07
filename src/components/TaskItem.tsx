@@ -205,10 +205,10 @@ function TaskRow({
         {/* Left side: Daily stat only */}
         <View style={styles.statsRow}>
           <View style={styles.statChip}>
-            <Text style={[styles.statLabel, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '700' }]}>
+            <Text style={[styles.statLabel, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '700' }]}>
               D:
             </Text>
-            <Text style={[styles.statValue, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '800' }]}>
+            <Text style={[styles.statValue, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '800' }]}>
               {formatDuration(hasRecurring(task) ? minutesForSection(task, 'daily') : task.spentMinutes)}
             </Text>
           </View>
@@ -507,12 +507,12 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   statLabel: {
-    fontSize: 23,
+    fontSize: 20,
     fontWeight: '500',
     color: APP_COLORS.textSubtle,
   },
   statValue: {
-    fontSize: 23,
+    fontSize: 20,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },
