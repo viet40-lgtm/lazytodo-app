@@ -57,6 +57,8 @@ function CircleRing({ progress, phase }: { progress: number; phase: Phase }) {
   );
 }
 
+let globalAudioCtx: any = null;
+
 function beep(freq = 880, duration = 150) {
   if (Platform.OS !== 'web') return Promise.resolve();
   return new Promise<void>((resolve) => {
@@ -67,7 +69,16 @@ function beep(freq = 880, duration = 150) {
         resolve();
         return;
       }
-      const ctx = new AudioCtx();
+      if (!globalAudioCtx) {
+        globalAudioCtx = new AudioCtx();
+      }
+      const ctx = globalAudioCtx;
+      
+      // If the context was suspended by autoplay policy, try to resume it
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       
@@ -83,7 +94,6 @@ function beep(freq = 880, duration = 150) {
       osc.stop(ctx.currentTime + duration / 1000);
       
       osc.onended = () => {
-        ctx.close();
         resolve();
       };
     } catch (e) {
@@ -170,7 +180,24 @@ export function PomodoroTimer() {
             { backgroundColor: running ? APP_COLORS.delete : accent, borderColor: running ? APP_COLORS.delete : accent },
             pressed && styles.pressed,
           ]}
-          onPress={() => setRunning((r) => !r)}
+          onPress={() => {
+            // Unlock Audio Context on direct user interaction (autoplay compliance)
+            if (Platform.OS === 'web') {
+              try {
+                // @ts-ignore
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) {
+                  if (!globalAudioCtx) globalAudioCtx = new AudioCtx();
+                  if (globalAudioCtx.state === 'suspended') {
+                    globalAudioCtx.resume();
+                  }
+                }
+              } catch (e) {
+                console.warn("Failed to resume AudioContext", e);
+              }
+            }
+            setRunning((r) => !r);
+          }}
           accessibilityLabel={running ? 'Stop timer' : 'Start timer'}
         >
           <Text style={styles.startStopText}>{running ? 'Stop' : 'Start'}</Text>
