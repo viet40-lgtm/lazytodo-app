@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, AppStateStatus, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 import { APP_COLORS, RADIUS, SPACING, softShadow } from '../constants';
 
 type Phase = 'work' | 'break';
@@ -110,15 +112,237 @@ async function triggerBeeps(count: number) {
   }
 }
 
+// Helper to save timer state to AsyncStorage
+const saveTimerState = async (
+  running: boolean,
+  startTime: number,
+  secsLeft: number,
+  phase: Phase,
+  cycles: number,
+  notificationIds: string[]
+) => {
+  try {
+    if (running) {
+      await AsyncStorage.setItem(
+        '@lazy_todo_pomodoro_state',
+        JSON.stringify({ running: true, startTime, secsLeft, phase, cycles, notificationIds })
+      );
+    } else {
+      await AsyncStorage.removeItem('@lazy_todo_pomodoro_state');
+    }
+  } catch (e) {
+    console.warn("Failed to save pomodoro state", e);
+  }
+};
+
+// Helper to load timer state from AsyncStorage
+const loadTimerState = async () => {
+  try {
+    const json = await AsyncStorage.getItem('@lazy_todo_pomodoro_state');
+    if (json) {
+      const data = JSON.parse(json);
+      return data;
+    }
+  } catch (e) {
+    console.warn("Failed to load pomodoro state", e);
+  }
+  return null;
+};
+
+// Helper to calculate exact current phase and seconds left based on elapsed time since startTime
+function calculateCurrentState(
+  startTime: number,
+  initialSecsLeft: number,
+  initialPhase: Phase,
+  initialCycles: number,
+  now = Date.now()
+) {
+  const elapsedSecs = Math.floor((now - startTime) / 1000);
+  if (elapsedSecs <= 0) {
+    return { secsLeft: initialSecsLeft, phase: initialPhase, cycles: initialCycles };
+  }
+
+  let tempSecsLeft = initialSecsLeft;
+  let tempPhase = initialPhase;
+  let tempCycles = initialCycles;
+  let remainingElapsed = elapsedSecs;
+
+  // 1. Process current running phase
+  if (remainingElapsed >= tempSecsLeft) {
+    remainingElapsed -= tempSecsLeft;
+    if (tempPhase === 'work') {
+      tempCycles += 1;
+      tempPhase = 'break';
+      tempSecsLeft = BREAK_SECS;
+    } else {
+      tempPhase = 'work';
+      tempSecsLeft = WORK_SECS;
+    }
+  } else {
+    return { secsLeft: tempSecsLeft - remainingElapsed, phase: tempPhase, cycles: tempCycles };
+  }
+
+  // 2. Process full cycles (work + break = 30 mins)
+  const CYCLE_PERIOD = WORK_SECS + BREAK_SECS;
+  const fullCyclesCount = Math.floor(remainingElapsed / CYCLE_PERIOD);
+  
+  tempCycles += fullCyclesCount;
+  remainingElapsed = remainingElapsed % CYCLE_PERIOD;
+
+  // 3. Process remaining time inside current cycle
+  if (tempPhase === 'break') {
+    if (remainingElapsed >= BREAK_SECS) {
+      remainingElapsed -= BREAK_SECS;
+      tempPhase = 'work';
+      if (remainingElapsed >= WORK_SECS) {
+        remainingElapsed -= WORK_SECS;
+        tempCycles += 1;
+        tempPhase = 'break';
+        tempSecsLeft = BREAK_SECS - remainingElapsed;
+      } else {
+        tempSecsLeft = WORK_SECS - remainingElapsed;
+      }
+    } else {
+      tempSecsLeft = BREAK_SECS - remainingElapsed;
+    }
+  } else {
+    if (remainingElapsed >= WORK_SECS) {
+      remainingElapsed -= WORK_SECS;
+      tempCycles += 1;
+      tempPhase = 'break';
+      if (remainingElapsed >= BREAK_SECS) {
+        remainingElapsed -= BREAK_SECS;
+        tempPhase = 'work';
+        tempSecsLeft = WORK_SECS - remainingElapsed;
+      } else {
+        tempSecsLeft = BREAK_SECS - remainingElapsed;
+      }
+    } else {
+      tempSecsLeft = WORK_SECS - remainingElapsed;
+    }
+  }
+
+  return { secsLeft: tempSecsLeft, phase: tempPhase, cycles: tempCycles };
+}
+
+// Helper to schedule native notifications
+async function scheduleTimerNotifications(phase: Phase, secsLeft: number) {
+  if (Platform.OS === 'web') return [];
+  try {
+    const ids: string[] = [];
+    
+    // 1st notification: end of current phase
+    const triggerDate1 = new Date(Date.now() + secsLeft * 1000);
+    const id1 = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: phase === 'work' ? '🍅 Focus Session Done' : '☕ Break Done',
+        body: phase === 'work' ? 'Time for a 5-minute break!' : 'Time to start focusing again!',
+        sound: true,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate1,
+      },
+    });
+    ids.push(id1);
+
+    // 2nd notification: end of next phase
+    const nextPhase = phase === 'work' ? 'break' : 'work';
+    const nextDuration = nextPhase === 'work' ? WORK_SECS : BREAK_SECS;
+    const triggerDate2 = new Date(Date.now() + (secsLeft + nextDuration) * 1000);
+    const id2 = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: nextPhase === 'work' ? '🍅 Focus Session Done' : '☕ Break Done',
+        body: nextPhase === 'work' ? 'Time for a 5-minute break!' : 'Time to start focusing again!',
+        sound: true,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate2,
+      },
+    });
+    ids.push(id2);
+
+    return ids;
+  } catch (e) {
+    console.warn("Failed to schedule notifications", e);
+    return [];
+  }
+}
+
+// Helper to cancel native notifications
+async function cancelTimerNotifications(ids: string[]) {
+  if (Platform.OS === 'web') return;
+  try {
+    for (const id of ids) {
+      await Notifications.cancelScheduledNotificationAsync(id);
+    }
+  } catch (e) {
+    console.warn("Failed to cancel notifications", e);
+  }
+}
+
 export function PomodoroTimer() {
   const [phase, setPhase] = useState<Phase>('work');
   const [secsLeft, setSecsLeft] = useState(WORK_SECS);
   const [running, setRunning] = useState(false);
   const [cycles, setCycles] = useState(0);
+  const scheduledIdsRef = useRef<string[]>([]);
 
   const totalSecs = phase === 'work' ? WORK_SECS : BREAK_SECS;
   const progress = secsLeft / totalSecs;
 
+  // 1. Initial State Restoration on Mount
+  useEffect(() => {
+    let active = true;
+    const init = async () => {
+      const saved = await loadTimerState();
+      if (!active) return;
+      if (saved && saved.running) {
+        const current = calculateCurrentState(
+          saved.startTime,
+          saved.secsLeft,
+          saved.phase,
+          saved.cycles
+        );
+        setPhase(current.phase);
+        setSecsLeft(current.secsLeft);
+        setCycles(current.cycles);
+        setRunning(true);
+        scheduledIdsRef.current = saved.notificationIds || [];
+      }
+    };
+    init();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // 2. State Restoration on App Foreground Transition
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        const saved = await loadTimerState();
+        if (saved && saved.running) {
+          const current = calculateCurrentState(
+            saved.startTime,
+            saved.secsLeft,
+            saved.phase,
+            saved.cycles
+          );
+          setPhase(current.phase);
+          setSecsLeft(current.secsLeft);
+          setCycles(current.cycles);
+        }
+      }
+    };
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  // 3. Regular Countdown Timer tick
   useEffect(() => {
     if (!running) return;
 
@@ -127,13 +351,33 @@ export function PomodoroTimer() {
         const finishedPhase = phase;
         triggerBeeps(finishedPhase === 'work' ? 5 : 3);
 
+        let nextPhase: Phase = 'work';
+        let nextSecs = WORK_SECS;
+        let nextCycles = cycles;
+
         if (finishedPhase === 'work') {
-          setPhase('break');
-          setSecsLeft(BREAK_SECS);
-          setCycles((c) => c + 1);
+          nextPhase = 'break';
+          nextSecs = BREAK_SECS;
+          nextCycles = cycles + 1;
         } else {
-          setPhase('work');
-          setSecsLeft(WORK_SECS);
+          nextPhase = 'work';
+          nextSecs = WORK_SECS;
+        }
+
+        setPhase(nextPhase);
+        setSecsLeft(nextSecs);
+        setCycles(nextCycles);
+
+        // Update rolling notification windows and storage anchors
+        if (Platform.OS !== 'web') {
+          (async () => {
+            await cancelTimerNotifications(scheduledIdsRef.current);
+            const ids = await scheduleTimerNotifications(nextPhase, nextSecs);
+            scheduledIdsRef.current = ids;
+            await saveTimerState(true, Date.now(), nextSecs, nextPhase, nextCycles, ids);
+          })();
+        } else {
+          saveTimerState(true, Date.now(), nextSecs, nextPhase, nextCycles, []);
         }
       } else {
         setSecsLeft((prev) => prev - 1);
@@ -141,13 +385,7 @@ export function PomodoroTimer() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [running, secsLeft, phase]);
-
-  const handleReset = useCallback(() => {
-    setRunning(false);
-    setPhase('work');
-    setSecsLeft(WORK_SECS);
-  }, []);
+  }, [running, secsLeft, phase, cycles]);
 
   const isWork = phase === 'work';
   const accent = isWork ? APP_COLORS.primary : '#0891b2';
@@ -180,7 +418,7 @@ export function PomodoroTimer() {
             { backgroundColor: running ? APP_COLORS.delete : accent, borderColor: running ? APP_COLORS.delete : accent },
             pressed && styles.pressed,
           ]}
-          onPress={() => {
+          onPress={async () => {
             // Unlock Audio Context on direct user interaction (autoplay compliance)
             if (Platform.OS === 'web') {
               try {
@@ -196,7 +434,28 @@ export function PomodoroTimer() {
                 console.warn("Failed to resume AudioContext", e);
               }
             }
-            setRunning((r) => !r);
+
+            const nextRunning = !running;
+            if (nextRunning) {
+              let ids: string[] = [];
+              if (Platform.OS !== 'web') {
+                const perm = await Notifications.requestPermissionsAsync();
+                if (perm.granted) {
+                  ids = await scheduleTimerNotifications(phase, secsLeft);
+                }
+              }
+              const now = Date.now();
+              await saveTimerState(true, now, secsLeft, phase, cycles, ids);
+              scheduledIdsRef.current = ids;
+              setRunning(true);
+            } else {
+              if (Platform.OS !== 'web') {
+                await cancelTimerNotifications(scheduledIdsRef.current);
+              }
+              await saveTimerState(false, 0, 0, 'work', 0, []);
+              scheduledIdsRef.current = [];
+              setRunning(false);
+            }
           }}
           accessibilityLabel={running ? 'Stop timer' : 'Start timer'}
         >
