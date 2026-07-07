@@ -336,7 +336,8 @@ export function useTasks(userId: string | null = null) {
     todayStart.setHours(0, 0, 0, 0);
     const todayMs = todayStart.getTime();
     // H3: use timeLogs !== undefined (presence check) instead of .length > 0
-    const isHabit = (t: Task) => t.persistent || t.timeLogs !== undefined;
+    // Fix: Since withRecurringSeries initializes timeLogs to [], we must check length.
+    const isHabit = (t: Task) => t.persistent || (t.timeLogs?.length ?? 0) > 0;
     const toReset = state.tasks.filter(
       (t) => isHabit(t) && t.completed && !t.deleted && (t.completedAt ?? 0) < todayMs,
     );

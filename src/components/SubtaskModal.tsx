@@ -156,7 +156,49 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
             <View style={styles.subtaskList}>
               {subtasks.map((st) => (
                 <View key={st.id} style={styles.subtaskRow}>
-                  <View style={styles.subtaskRowTop}>
+                  {/* 1st line: +5, +30m, time, arrow up, x */}
+                  <View style={styles.row1}>
+                    <View style={styles.row1Left}>
+                      <View style={styles.timeBtnGroup}>
+                        <Pressable
+                          style={styles.timeBtn}
+                          onPress={() => handleLogTime(st.id, 5)}
+                          hitSlop={4}
+                        >
+                          <Text style={styles.timeBtnText}>+5m</Text>
+                        </Pressable>
+                        <Pressable
+                          style={styles.timeBtn}
+                          onPress={() => handleLogTime(st.id, 30)}
+                          hitSlop={4}
+                        >
+                          <Text style={styles.timeBtnText}>+30m</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.row1Center}>
+                      <View style={styles.spentChip}>
+                        <Text style={styles.spentText}>{formatDuration(st.timeSpent || 0)}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.row1Right}>
+                      <View style={styles.corner}>
+                        <View style={styles.sortArrows}>
+                          <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => handleMoveUp(st.id)}>
+                            <Text style={styles.arrowText}>↑</Text>
+                          </Pressable>
+                        </View>
+                        <Pressable style={styles.subtaskDelete} onPress={() => handleRemove(st.id)} hitSlop={8}>
+                          <Text style={styles.subtaskDeleteText}>X</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* 2nd line: check off circle, name */}
+                  <View style={styles.row2}>
                     <Pressable
                       style={styles.subtaskCheckbox}
                       onPress={() => handleToggle(st.id)}
@@ -165,6 +207,7 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
                     >
                       {st.completed ? <Text style={styles.subtaskCheckmark}>✓</Text> : null}
                     </Pressable>
+
                     <View style={styles.subtaskNameCol}>
                       <TextInput
                         style={[
@@ -175,45 +218,8 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
                         value={st.name}
                         onChangeText={(text) => handleEditName(st.id, text)}
                         underlineColorAndroid="transparent"
+                        multiline={true}
                       />
-                    </View>
-                    <View style={styles.corner}>
-                      <View style={styles.sortArrows}>
-                        <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => handleMoveUp(st.id)}>
-                          <Text style={styles.arrowText}>↑</Text>
-                        </Pressable>
-                      </View>
-                      <Pressable style={styles.subtaskDelete} onPress={() => handleRemove(st.id)} hitSlop={8}>
-                        <Text style={styles.subtaskDeleteText}>X</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                  <View style={styles.actionRow}>
-                    <View style={styles.timeBtnGroup}>
-                      <Pressable
-                        style={styles.timeBtn}
-                        onPress={() => handleLogTime(st.id, 5)}
-                        hitSlop={4}
-                      >
-                        <Text style={styles.timeBtnText}>+5m</Text>
-                      </Pressable>
-                      <Pressable
-                        style={styles.timeBtn}
-                        onPress={() => handleLogTime(st.id, 30)}
-                        hitSlop={4}
-                      >
-                        <Text style={styles.timeBtnText}>+30m</Text>
-                      </Pressable>
-                    </View>
-                    <View style={{ flex: 1, alignItems: 'center' }}>
-                      <View style={styles.spentChip}>
-                        <Text style={styles.spentText}>{formatDuration(st.timeSpent || 0)}</Text>
-                      </View>
-                    </View>
-                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                      <View style={styles.spentChip}>
-                        <Text style={styles.createdText}>{formatDate(st.completedAt || st.createdAt || Date.now())}</Text>
-                      </View>
                     </View>
                   </View>
                 </View>
@@ -311,16 +317,37 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     ...softShadow(0.04, 8, 3),
   },
-  subtaskRowTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: SPACING.md,
-  },
-  actionRow: {
+  row1: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: SPACING.md,
+    width: '100%',
+  },
+  row1Left: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+  },
+  row1Center: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  row1Right: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  row2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    width: '100%',
+    marginTop: SPACING.xs,
+  },
+  dateLabel: {
+    fontSize: 23,
+    fontWeight: '600',
+    color: APP_COLORS.textSubtle,
+    minWidth: 45,
   },
   timeBtnGroup: {
     flexDirection: 'row',
@@ -344,7 +371,7 @@ const styles = StyleSheet.create({
   spentText: {
     fontSize: 23,
     fontWeight: '700',
-    color: APP_COLORS.textMuted,
+    color: APP_COLORS.primary,
   },
   createdText: {
     fontSize: 23,
@@ -360,6 +387,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
+    flexShrink: 0,
   },
   subtaskCheckmark: {
     color: APP_COLORS.primary,
@@ -374,6 +402,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: SPACING.sm,
+    minWidth: 0,
   },
   subtaskName: {
     flex: 1,
@@ -381,6 +410,14 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     fontWeight: '600',
     color: APP_COLORS.text,
+    minWidth: 0,
+    flexShrink: 1,
+    ...Platform.select({
+      web: {
+        wordBreak: 'break-word',
+        overflowWrap: 'break-word',
+      } as any,
+    }),
   },
   subtaskNameInput: {
     padding: 0,
@@ -389,6 +426,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     // @ts-ignore - for web/windows to remove focus outline
     outlineStyle: 'none',
+    ...Platform.select({
+      web: {
+        resize: 'none',
+      } as any,
+    }),
   },
   subtaskNameDone: {
     textDecorationLine: 'line-through',
@@ -404,6 +446,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.sm,
     marginTop: 1,
+    flexShrink: 0,
   },
   sortArrows: {
     flexDirection: 'column',

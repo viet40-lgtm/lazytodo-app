@@ -62,7 +62,8 @@ function getHabitStats(task: Task): { label: string; mins: number; section: Task
     seen.add(section);
     result.push({ label: STAT_LABEL[section], mins: minutesForSection(task, section), section });
   }
-  return result;
+  const order = ['daily', 'weekly', 'monthly', 'yearly'];
+  return result.sort((a, b) => order.indexOf(a.section) - order.indexOf(b.section));
 }
 
 function formatReminder(reminder: string): string {
@@ -97,7 +98,7 @@ function TaskRow({
   onManageSubtasks,
 }: TaskItemProps) {
   // Hide the recurring chip when the stats row is visible — it already shows the periods.
-  const showsStatsRow = hasRecurring(task) && (task.persistent || task.timeLogs !== undefined);
+  const showsStatsRow = hasRecurring(task) && (task.persistent || (task.timeLogs?.length ?? 0) > 0);
   const repeat = showsStatsRow ? null : recurringLabel(task.recurring);
   const done = task.completed;
   const hasMeta = Boolean(task.reminder || repeat);
@@ -121,27 +122,43 @@ function TaskRow({
 
   return (
     <View style={[styles.card, { borderLeftColor: accentColor }, done && styles.cardDone]}>
-      <View style={styles.topRow}>
-        <Pressable
-          style={[
-            styles.checkbox,
-            { borderColor: APP_COLORS.primary },
-            done && { backgroundColor: APP_COLORS.primary, borderColor: APP_COLORS.primary },
-          ]}
-          onPress={() => onToggle(task)}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: done }}
-          hitSlop={8}
-        >
-          {done ? <Text style={styles.checkmark}>✓</Text> : null}
-        </Pressable>
+      {/* 1st line: +5, +30m, arrow up, x */}
+      <View style={styles.row1}>
+        <View style={styles.row1Left}>
+          <View style={styles.timeBtnGroup}>
+            {onManageSubtasks && (
+              <Pressable
+                style={[
+                  styles.timeBtn,
+                  { backgroundColor: (task.subtasks && task.subtasks.length > 0) ? APP_COLORS.headerBg : accentSoft }
+                ]}
+                onPress={() => onManageSubtasks?.(task.id)}
+                hitSlop={4}
+              >
+                <Text style={[
+                  styles.timeBtnText,
+                  { color: (task.subtasks && task.subtasks.length > 0) ? '#FFFFFF' : accentColor }
+                ]}>Sub-T</Text>
+              </Pressable>
+            )}
+            <Pressable
+              style={[styles.timeBtn, { backgroundColor: accentSoft }]}
+              onPress={() => onLogTime(task.id, 5)}
+              hitSlop={4}
+            >
+              <Text style={[styles.timeBtnText, { color: accentColor }]}>+5m</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.timeBtn, { backgroundColor: accentSoft }]}
+              onPress={() => onLogTime(task.id, 30)}
+              hitSlop={4}
+            >
+              <Text style={[styles.timeBtnText, { color: accentColor }]}>+30m</Text>
+            </Pressable>
+          </View>
+        </View>
 
-        <Pressable style={styles.titleArea} onPress={() => onEdit(task)}>
-          <Text style={[styles.name, done && styles.nameDone]} numberOfLines={3}>
-            {task.name}
-          </Text>
-        </Pressable>
-
+        <View style={styles.row1Right}>
           <View style={styles.corner}>
             <View style={styles.sortArrows}>
               <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => onReorder(task.id, 'up')}>
@@ -158,102 +175,101 @@ function TaskRow({
             </Pressable>
           </View>
         </View>
+      </View>
 
-      {hasMeta || hasRecurring(task) ? (
-        <View style={styles.metaRow}>
-          <Pressable style={styles.metaRowContent} onPress={() => onEdit(task)}>
-            {task.reminder ? (
-              <View style={styles.metaChip}>
-                <Text style={styles.metaText}>{formatReminder(task.reminder)}</Text>
-              </View>
-            ) : null}
-            {repeat ? (
-                <View style={styles.metaChip}>
-                  <Text style={styles.metaText}>↻ {repeat}</Text>
-                </View>
-              ) : null}
-            </Pressable>
-            {/* For reminder tasks: show created date inline here (2-line card) */}
-            {task.reminderOnly ? (
-              <Text style={styles.createdText}>{createdLabel(task.createdAt)}</Text>
-            ) : null}
-            {hasRecurring(task) && !task.persistent && !(task.timeLogs?.length) ? (
-              <Pressable
-                style={styles.metaSkipBtn}
-                onPress={() => onSkip(task.id)}
-                accessibilityLabel={`Skip ${task.name}`}
-                hitSlop={6}
-              >
-                <Text style={styles.metaSkipText}>Skip</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
+      {/* 2nd line: check off circle, name */}
+      <View style={styles.row2}>
+        <Pressable
+          style={[
+            styles.checkbox,
+            { borderColor: APP_COLORS.primary },
+            done && { backgroundColor: APP_COLORS.primary, borderColor: APP_COLORS.primary },
+          ]}
+          onPress={() => onToggle(task)}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: done }}
+          hitSlop={8}
+        >
+          {done ? <Text style={styles.checkmark}>✓</Text> : null}
+        </Pressable>
 
-      {/* Time-tracking row — hidden for reminder tasks */}
-      {!task.reminderOnly ? (
-        <View style={styles.actionRow}>
-          <View style={styles.timeBtnGroup}>
-            <Pressable
-              style={[
-                styles.timeBtn,
-                { backgroundColor: (task.subtasks && task.subtasks.length > 0) ? APP_COLORS.headerBg : accentSoft }
-              ]}
-              onPress={() => onManageSubtasks?.(task.id)}
-              hitSlop={4}
-            >
-              <Text style={[
-                styles.timeBtnText,
-                { color: (task.subtasks && task.subtasks.length > 0) ? '#FFFFFF' : accentColor }
-              ]}>Sub-T</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.timeBtn, { backgroundColor: accentSoft }]}
-              onPress={() => onLogTime(task.id, 5)}
-              hitSlop={4}
-            >
-              <Text style={[styles.timeBtnText, { color: accentColor }]}>+5m</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.timeBtn, { backgroundColor: accentSoft }]}
-              onPress={() => onLogTime(task.id, 30)}
-              hitSlop={4}
-            >
-              <Text style={[styles.timeBtnText, { color: accentColor }]}>+30m</Text>
-            </Pressable>
-          </View>
-          <View style={{ flex: 1, alignItems: 'center' }}>
-            <View style={styles.spentChip}>
-              <Text style={styles.spentText}>{displayTime}</Text>
-            </View>
-          </View>
-          <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <View style={styles.spentChip}>
-              <Text style={styles.createdText}>{createdLabel(task.createdAt)}</Text>
-            </View>
-          </View>
-        </View>
-      ) : null}
+        <Pressable style={styles.titleArea} onPress={() => onEdit(task)}>
+          <Text style={[styles.name, done && styles.nameDone]}>
+            {task.name}
+          </Text>
+        </Pressable>
+      </View>
 
-      {/* Per-period time breakdown for persistent habits */}
-      {hasRecurring(task) && (task.persistent || (task.timeLogs?.length ?? 0) > 0) ? (
+      {/* Bottom line: stats on the left, date/time reminder on the right */}
+      <View style={styles.bottomRow}>
+        {/* Left side: Daily stat only */}
         <View style={styles.statsRow}>
-          {getHabitStats(task).map(({ label, mins, section }) => (
-            <View
-              key={section}
-              style={[
-                styles.statChip,
-                section === listSection && { borderColor: accentColor },
-              ]}
-            >
-              <Text style={styles.statLabel}>{label}</Text>
-              <Text style={[styles.statValue, mins > 0 && { color: accentColor }]}>
-                {mins > 0 ? formatDuration(mins) : '—'}
-              </Text>
-            </View>
-          ))}
+          <View style={styles.statChip}>
+            <Text style={[styles.statLabel, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '700' }]}>
+              D:
+            </Text>
+            <Text style={[styles.statValue, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '800' }]}>
+              {(() => {
+                const dailyMins = hasRecurring(task) ? minutesForSection(task, 'daily') : task.spentMinutes;
+                return dailyMins > 0 ? formatDuration(dailyMins) : (hasRecurring(task) ? '—' : '0:00');
+              })()}
+            </Text>
+          </View>
         </View>
-      ) : null}
+
+        {/* Right side: W/M/Y stats and reminders */}
+        <View style={styles.bottomRowRight}>
+          {/* Other stats (W/M/Y) */}
+          {showsStatsRow && (
+            <View style={styles.otherStatsRow}>
+              {getHabitStats(task)
+                .filter((s) => s.section !== 'daily')
+                .map(({ label, mins, section }) => (
+                  <View
+                    key={section}
+                    style={[
+                      styles.statChip,
+                      section === listSection && { borderColor: accentColor },
+                    ]}
+                  >
+                    <Text style={styles.statLabel}>{label}</Text>
+                    <Text style={[styles.statValue, mins > 0 && { color: accentColor }]}>
+                      {mins > 0 ? formatDuration(mins) : '—'}
+                    </Text>
+                  </View>
+                ))}
+            </View>
+          )}
+
+          {/* Reminder / skip on the right */}
+          {(hasMeta || hasRecurring(task)) && (
+            <View style={styles.metaContainer}>
+              <Pressable style={styles.metaRowContent} onPress={() => onEdit(task)}>
+                {task.reminder ? (
+                  <View style={styles.metaChip}>
+                    <Text style={styles.metaText}>{formatReminder(task.reminder)}</Text>
+                  </View>
+                ) : null}
+                {repeat ? (
+                  <View style={styles.metaChip}>
+                    <Text style={styles.metaText}>↻ {repeat}</Text>
+                  </View>
+                ) : null}
+              </Pressable>
+              {hasRecurring(task) && !task.persistent && !(task.timeLogs?.length) ? (
+                <Pressable
+                  style={styles.metaSkipBtn}
+                  onPress={() => onSkip(task.id)}
+                  accessibilityLabel={`Skip ${task.name}`}
+                  hitSlop={6}
+                >
+                  <Text style={styles.metaSkipText}>Skip</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          )}
+        </View>
+      </View>
     </View>
   );
 }
@@ -275,6 +291,37 @@ const styles = StyleSheet.create({
   },
   cardDone: {
     opacity: 0.55,
+  },
+  row1: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  row1Left: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+  },
+  row1Center: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  row1Right: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  row2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    width: '100%',
+  },
+  dateLabel: {
+    fontSize: 23,
+    fontWeight: '600',
+    color: APP_COLORS.textSubtle,
+    minWidth: 45,
   },
   topRow: {
     flexDirection: 'row',
@@ -334,9 +381,28 @@ const styles = StyleSheet.create({
     color: APP_COLORS.textMuted,
     fontWeight: '500',
   },
-  metaRow: {
+  bottomRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 4,
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+  },
+  bottomRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: SPACING.md,
+  },
+  otherStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs + 2,
+  },
+  metaContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
   },
@@ -396,7 +462,7 @@ const styles = StyleSheet.create({
   spentText: {
     fontSize: 23,
     fontWeight: '700',
-    color: APP_COLORS.textMuted,
+    color: APP_COLORS.primary,
   },
   reminderDateRow: {
     flexDirection: 'row',

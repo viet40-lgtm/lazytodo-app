@@ -9,6 +9,7 @@ import { CompletionCelebration } from '../src/components/CompletionCelebration';
 import { Quote } from '../src/components/Quote';
 import { SettingsModal } from '../src/components/SettingsModal';
 import { TaskList } from '../src/components/TaskList';
+import { PomodoroTimer } from '../src/components/PomodoroTimer';
 import { TaskModal } from '../src/components/TaskModal';
 import { SubtaskModal } from '../src/components/SubtaskModal';
 import { APP_COLORS, FAB_SIZE, RADIUS, SCREEN_PADDING, SPACING } from '../src/constants';
@@ -174,6 +175,7 @@ export default function HomeScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <PomodoroTimer />
         <TaskList
           section="daily"
           title="Daily"
@@ -236,6 +238,7 @@ export default function HomeScreen() {
           onSkip={skipTask}
           onLogTime={logTime}
           onReorder={reorderTask}
+          onManageSubtasks={setManageSubtasksId}
           emptyText="Long-term tasks. No rush."
         />
         <Quote text={quote} />
