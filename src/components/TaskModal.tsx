@@ -314,9 +314,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: APP_COLORS.headerBg,
-    paddingHorizontal: SCREEN_PADDING,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.xl,
+    padding: 10,
     borderBottomLeftRadius: RADIUS.xl,
     borderBottomRightRadius: RADIUS.xl,
     ...softShadow(0.18, 16, 6),

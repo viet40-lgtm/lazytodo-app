@@ -78,9 +78,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SCREEN_PADDING,
-    paddingTop: SPACING.xl,
-    paddingBottom: SPACING.lg,
+    padding: 10,
     backgroundColor: APP_COLORS.headerBg,
   },
   title: {
