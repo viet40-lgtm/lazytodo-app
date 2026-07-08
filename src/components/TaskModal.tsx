@@ -35,6 +35,7 @@ interface TaskModalProps {
     recurring?: Recurring[];
     persistent?: boolean;
     reminderOnly?: boolean;
+    alarm?: boolean;
   }) => void;
   onClose: () => void;
 }
@@ -54,6 +55,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
   const [reminder, setReminder] = useState(task?.reminder ?? '');
   const [recurring, setRecurring] = useState<Recurring[]>([]);
   const [reminderOnly, setReminderOnly] = useState(task?.reminderOnly ?? false);
+  const [alarm, setAlarm] = useState(task?.alarm ?? false);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -64,6 +66,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
     const rec = normalizeRecurring(task?.recurring);
     setRecurring(rec);
     setReminderOnly(task?.reminderOnly ?? false);
+    setAlarm(task?.alarm ?? false);
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
   }, [visible, task, defaultSection]);
@@ -103,7 +106,8 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
     section !== (task?.section ?? defaultSection) ||
     reminder !== (task?.reminder ?? '') ||
     JSON.stringify(recurring) !== JSON.stringify(normalizeRecurring(task?.recurring)) ||
-    reminderOnly !== (task?.reminderOnly ?? false)
+    reminderOnly !== (task?.reminderOnly ?? false) ||
+    alarm !== (task?.alarm ?? false)
   );
 
   const toggleRepeat = (value: Recurring) => {
@@ -122,6 +126,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
       recurring: !reminderOnly && recurring.length ? recurring : undefined,
       persistent: task?.persistent,
       reminderOnly: reminderOnly || undefined,
+      alarm: reminder ? alarm : undefined,
     });
     onClose();
   };
@@ -234,6 +239,39 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                 ) : null}
               </View>
             </View>
+
+            {reminder ? (
+              <View style={styles.field}>
+                <Text style={styles.label}>Alarm Type</Text>
+                <View style={styles.chipRow}>
+                  <Pressable
+                    onPress={() => setAlarm(false)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: !alarm }}
+                    style={[styles.chip, !alarm && styles.chipSelected]}
+                  >
+                    <Text style={[styles.chipText, !alarm && styles.chipTextSelected]}>
+                      🔔  Notification
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setAlarm(true)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: alarm }}
+                    style={[styles.chip, alarm && styles.chipSelected]}
+                  >
+                    <Text style={[styles.chipText, alarm && styles.chipTextSelected]}>
+                      ⏰  Alarm-Android
+                    </Text>
+                  </Pressable>
+                </View>
+                {alarm && Platform.OS !== 'android' ? (
+                  <Text style={styles.disclaimerText}>
+                    Note: Programmatic system alarms are only supported on Android. On this device/platform, a standard notification sound will be used instead.
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
 
             {/* Goal-only fields: Repeat + Section/Mode */}
             {!reminderOnly ? (
@@ -479,6 +517,12 @@ const styles = StyleSheet.create({
     color: APP_COLORS.text,
     fontSize: 25,
     fontWeight: '600',
+  },
+  disclaimerText: {
+    fontSize: 14,
+    color: APP_COLORS.textSubtle,
+    fontStyle: 'italic',
+    marginTop: 4,
   },
 
 });

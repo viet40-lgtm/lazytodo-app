@@ -34,6 +34,8 @@ export interface Task {
   /** Optional checklist of sub-tasks. */
   subtasks?: SubTask[];
   notificationId?: string;
+  alarm?: boolean;
+  alarmSet?: boolean;
   createdAt: number;
   updatedAt?: number;
   order?: number;

@@ -171,16 +171,29 @@ export function useTasks(userId: string | null = null) {
         if (!prev) return prev;
         const changed = tasks.some((task) => {
           const existing = prev.tasks.find((item) => item.id === task.id);
-          return existing?.notificationId !== task.notificationId;
+          return (
+            existing?.notificationId !== task.notificationId ||
+            existing?.alarmSet !== task.alarmSet
+          );
         });
         return changed
           ? {
               ...prev,
               tasks: prev.tasks.map((t) => {
                 const synced = tasks.find((s) => s.id === t.id);
-                return synced && synced.notificationId !== t.notificationId
-                  ? { ...t, notificationId: synced.notificationId }
-                  : t;
+                if (synced) {
+                  if (
+                    synced.notificationId !== t.notificationId ||
+                    synced.alarmSet !== t.alarmSet
+                  ) {
+                    return {
+                      ...t,
+                      notificationId: synced.notificationId,
+                      alarmSet: synced.alarmSet,
+                    };
+                  }
+                }
+                return t;
               }),
             }
           : prev;
@@ -206,6 +219,7 @@ export function useTasks(userId: string | null = null) {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         completed: false,
+        alarmSet: false,
       };
       updateTasks((tasks) => [...tasks, newTask]);
     },
@@ -217,7 +231,17 @@ export function useTasks(userId: string | null = null) {
       updateTasks((tasks) =>
         tasks.map((task) => {
           if (task.id !== id) return task;
-          const merged = { ...task, ...updates, updatedAt: Date.now() };
+          
+          const reminderChanged = updates.reminder !== undefined && updates.reminder !== task.reminder;
+          const alarmChanged = updates.alarm !== undefined && updates.alarm !== task.alarm;
+          const resetAlarmSet = reminderChanged || alarmChanged;
+
+          const merged = { 
+            ...task, 
+            ...updates, 
+            ...(resetAlarmSet ? { alarmSet: false } : {}),
+            updatedAt: Date.now() 
+          };
           if (updates.recurring && hasRecurring(merged)) {
             return { ...merged, ...withRecurringSeries(merged) };
           }

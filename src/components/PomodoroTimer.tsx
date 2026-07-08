@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
 import { APP_COLORS, RADIUS, SPACING, softShadow } from '../constants';
+import {
+  requestPomodoroPermission,
+  scheduleTimerNotifications,
+  cancelTimerNotifications,
+  setSystemAlarm,
+} from '../services/pomodoroNotifications';
 
 type Phase = 'work' | 'break';
 
@@ -61,7 +66,7 @@ function CircleRing({ progress, phase }: { progress: number; phase: Phase }) {
 
 let globalAudioCtx: any = null;
 
-function beep(freq = 880, duration = 150) {
+function beep(freq = 880, duration = 150, volume = 0.08) {
   if (Platform.OS !== 'web') return Promise.resolve();
   return new Promise<void>((resolve) => {
     try {
@@ -89,10 +94,10 @@ function beep(freq = 880, duration = 150) {
       
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
       
       osc.start(ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
+      gain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + duration / 1000);
       osc.stop(ctx.currentTime + duration / 1000);
       
       osc.onended = () => {
@@ -225,72 +230,42 @@ function calculateCurrentState(
   return { secsLeft: tempSecsLeft, phase: tempPhase, cycles: tempCycles };
 }
 
-// Helper to schedule native notifications
-async function scheduleTimerNotifications(phase: Phase, secsLeft: number) {
-  if (Platform.OS === 'web') return [];
-  try {
-    const ids: string[] = [];
-    
-    // 1st notification: end of current phase
-    const triggerDate1 = new Date(Date.now() + secsLeft * 1000);
-    const id1 = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: phase === 'work' ? '🍅 Focus Session Done' : '☕ Break Done',
-        body: phase === 'work' ? 'Time for a 5-minute break!' : 'Time to start focusing again!',
-        sound: true,
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: triggerDate1,
-      },
-    });
-    ids.push(id1);
-
-    // 2nd notification: end of next phase
-    const nextPhase = phase === 'work' ? 'break' : 'work';
-    const nextDuration = nextPhase === 'work' ? WORK_SECS : BREAK_SECS;
-    const triggerDate2 = new Date(Date.now() + (secsLeft + nextDuration) * 1000);
-    const id2 = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: nextPhase === 'work' ? '🍅 Focus Session Done' : '☕ Break Done',
-        body: nextPhase === 'work' ? 'Time for a 5-minute break!' : 'Time to start focusing again!',
-        sound: true,
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: triggerDate2,
-      },
-    });
-    ids.push(id2);
-
-    return ids;
-  } catch (e) {
-    console.warn("Failed to schedule notifications", e);
-    return [];
-  }
-}
-
-// Helper to cancel native notifications
-async function cancelTimerNotifications(ids: string[]) {
-  if (Platform.OS === 'web') return;
-  try {
-    for (const id of ids) {
-      await Notifications.cancelScheduledNotificationAsync(id);
-    }
-  } catch (e) {
-    console.warn("Failed to cancel notifications", e);
-  }
-}
+// Platform-specific notification functions imported from '../services/pomodoroNotifications'
 
 export function PomodoroTimer() {
   const [phase, setPhase] = useState<Phase>('work');
   const [secsLeft, setSecsLeft] = useState(WORK_SECS);
   const [running, setRunning] = useState(false);
   const [cycles, setCycles] = useState(0);
+  const [useSystemAlarm, setUseSystemAlarm] = useState(false);
   const scheduledIdsRef = useRef<string[]>([]);
 
   const totalSecs = phase === 'work' ? WORK_SECS : BREAK_SECS;
   const progress = secsLeft / totalSecs;
+
+  useEffect(() => {
+    AsyncStorage.getItem('@lazy_todo_pomodoro_use_alarm').then((val) => {
+      if (val !== null) setUseSystemAlarm(val === 'true');
+    });
+  }, []);
+
+  const toggleSystemAlarm = useCallback((val: boolean) => {
+    setUseSystemAlarm(val);
+    AsyncStorage.setItem('@lazy_todo_pomodoro_use_alarm', String(val));
+  }, []);
+
+  const handleReset = useCallback(async () => {
+    // Play a brief beep for audio confirmation
+    beep(440, 60, 0.03);
+    if (Platform.OS !== 'web') {
+      await cancelTimerNotifications(scheduledIdsRef.current);
+    }
+    await saveTimerState(false, 0, 0, 'work', 0, []);
+    scheduledIdsRef.current = [];
+    setRunning(false);
+    setPhase('work');
+    setSecsLeft(WORK_SECS);
+  }, []);
 
   // 1. Initial State Restoration on Mount
   useEffect(() => {
@@ -374,6 +349,12 @@ export function PomodoroTimer() {
             await cancelTimerNotifications(scheduledIdsRef.current);
             const ids = await scheduleTimerNotifications(nextPhase, nextSecs);
             scheduledIdsRef.current = ids;
+            if (useSystemAlarm) {
+              await setSystemAlarm(
+                nextPhase === 'work' ? '🍅 Pomodoro Focus Session Done' : '☕ Pomodoro Break Done',
+                nextSecs
+              );
+            }
             await saveTimerState(true, Date.now(), nextSecs, nextPhase, nextCycles, ids);
           })();
         } else {
@@ -385,7 +366,7 @@ export function PomodoroTimer() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [running, secsLeft, phase, cycles]);
+  }, [running, secsLeft, phase, cycles, useSystemAlarm]);
 
   const isWork = phase === 'work';
   const accent = isWork ? APP_COLORS.primary : '#0891b2';
@@ -408,9 +389,17 @@ export function PomodoroTimer() {
 
       {/* Timer + controls */}
       <View style={styles.centerRow}>
-        <View style={[styles.timerPill, { borderColor: accent }]}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.timerPill,
+            { borderColor: accent },
+            pressed && styles.pressed,
+          ]}
+          onPress={handleReset}
+          accessibilityLabel="Reset timer to 25 minutes"
+        >
           <Text style={[styles.timerText, { color: accent }]}>{formatTime(secsLeft)}</Text>
-        </View>
+        </Pressable>
 
         <Pressable
           style={({ pressed }) => [
@@ -435,13 +424,22 @@ export function PomodoroTimer() {
               }
             }
 
+            // Play short click feedback beep
+            beep(600, 50, 0.03);
+
             const nextRunning = !running;
             if (nextRunning) {
               let ids: string[] = [];
               if (Platform.OS !== 'web') {
-                const perm = await Notifications.requestPermissionsAsync();
-                if (perm.granted) {
+                const granted = await requestPomodoroPermission();
+                if (granted) {
                   ids = await scheduleTimerNotifications(phase, secsLeft);
+                }
+                if (useSystemAlarm) {
+                  await setSystemAlarm(
+                    phase === 'work' ? '🍅 Pomodoro Focus Session Done' : '☕ Pomodoro Break Done',
+                    secsLeft
+                  );
                 }
               }
               const now = Date.now();
@@ -462,6 +460,43 @@ export function PomodoroTimer() {
           <Text style={styles.startStopText}>{running ? 'Stop' : 'Start'}</Text>
         </Pressable>
       </View>
+
+      {/* Alarm Type Option */}
+      <View style={styles.optionRow}>
+        <Pressable
+          onPress={() => toggleSystemAlarm(false)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: !useSystemAlarm }}
+          style={[
+            styles.chip,
+            !useSystemAlarm && { backgroundColor: accentSoft, borderColor: accent }
+          ]}
+        >
+          <Text style={[styles.chipText, !useSystemAlarm && { color: accent }]}>
+            🔔  Notification
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => toggleSystemAlarm(true)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: useSystemAlarm }}
+          style={[
+            styles.chip,
+            useSystemAlarm && { backgroundColor: accentSoft, borderColor: accent }
+          ]}
+        >
+          <Text style={[styles.chipText, useSystemAlarm && { color: accent }]}>
+            ⏰  Alarm-Android
+          </Text>
+        </Pressable>
+      </View>
+      {useSystemAlarm && (
+        <Text style={[styles.disclaimerText, { color: accent }]}>
+          {Platform.OS === 'android' 
+            ? '⚠️ Note: Starting the timer will register a system alarm. If you pause early, you must delete it manually in the Clock app.'
+            : 'Note: Programmatic system alarms are only supported on Android. This platform will use standard notification alerts instead.'}
+        </Text>
+      )}
 
       {/* Progress bar */}
       <View style={[styles.barTrack, { backgroundColor: accentSoft }]}>
@@ -562,5 +597,40 @@ const styles = StyleSheet.create({
   barFill: {
     height: '100%',
     borderRadius: RADIUS.pill,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.md,
+    marginTop: SPACING.xs,
+  },
+  optionLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    gap: SPACING.xs,
+  },
+  chip: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.pill,
+    borderWidth: 1.5,
+    borderColor: APP_COLORS.border,
+    backgroundColor: APP_COLORS.surface,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: APP_COLORS.textMuted,
+  },
+  disclaimerText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: -SPACING.xs,
+    lineHeight: 16,
   },
 });
