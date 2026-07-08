@@ -250,7 +250,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                     accessibilityState={{ selected: !alarm }}
                     style={[styles.chip, !alarm && styles.chipSelected]}
                   >
-                    <Text style={[styles.chipText, !alarm && styles.chipTextSelected]}>
+                    <Text style={[styles.chipText, styles.alarmChipText, !alarm && styles.chipTextSelected]}>
                       🔔  Notification
                     </Text>
                   </Pressable>
@@ -260,7 +260,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                     accessibilityState={{ selected: alarm }}
                     style={[styles.chip, alarm && styles.chipSelected]}
                   >
-                    <Text style={[styles.chipText, alarm && styles.chipTextSelected]}>
+                    <Text style={[styles.chipText, styles.alarmChipText, alarm && styles.chipTextSelected]}>
                       ⏰  Alarm-Android
                     </Text>
                   </Pressable>
@@ -476,6 +476,9 @@ const styles = StyleSheet.create({
   },
   chipTextSelected: {
     color: APP_COLORS.primaryDark,
+  },
+  alarmChipText: {
+    fontSize: 20,
   },
   actions: {
     flexDirection: 'row',

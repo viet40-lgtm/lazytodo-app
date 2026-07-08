@@ -616,14 +616,14 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
+    paddingVertical: SPACING.sm,
     borderRadius: RADIUS.pill,
     borderWidth: 1.5,
     borderColor: APP_COLORS.border,
     backgroundColor: APP_COLORS.surface,
   },
   chipText: {
-    fontSize: 13,
+    fontSize: 20,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },
