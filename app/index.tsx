@@ -42,6 +42,20 @@ const FEATURES = [
     bg: '#fef3c7',
   },
   {
+    icon: '⏱️',
+    title: 'Focus Timer',
+    desc: 'Built-in Pomodoro timer to work in high-efficiency intervals. Track cycles and stay motivated.',
+    color: '#ea580c',
+    bg: '#ffedd5',
+  },
+  {
+    icon: '⏰',
+    title: 'Alarm-Android',
+    desc: 'Register loud, persistent system alarms on Android directly from the app so you never miss a reminder.',
+    color: '#4f46e5',
+    bg: '#e0e7ff',
+  },
+  {
     icon: '🔔',
     title: 'Reminders',
     desc: 'Set time-based reminders for any task. Never miss what matters.',
@@ -108,6 +122,14 @@ const FAQS = [
     q: 'How is this different from other to-do apps?',
     a: 'Most task managers are overwhelming. Lazy To-Do is intentionally simple — it organizes tasks by timeframe (today, daily, weekly, monthly, yearly) so you always know what to focus on, without complex projects or folders.',
   },
+  {
+    q: 'Does it have a Pomodoro focus timer?',
+    a: 'Yes. The app has a built-in Pomodoro focus timer to help you work in focused intervals. It tracks your completed cycles and celebrate your focus sessions.',
+  },
+  {
+    q: 'Can I set system alarms on Android?',
+    a: 'Yes. In addition to standard push notifications, you can toggle "Alarm-Android" when creating a reminder to schedule a native system alarm in your Android device\'s Clock app directly.',
+  },
 ];
 
 export default function LandingPage() {
@@ -139,7 +161,7 @@ export default function LandingPage() {
           <Text style={styles.heroLogo}>LazyToDo.app</Text>
           <Text
             style={styles.heroHeadline}
-            accessibilityRole="heading"
+            accessibilityRole="header"
             aria-level={1}
           >
             The lazy way to{'\n'}stay on top of things.

@@ -50,6 +50,14 @@ const FAQS = [
     q: 'How is this different from other to-do apps?',
     a: 'Most task managers are overwhelming. Lazy To-Do is intentionally simple — it organizes tasks by timeframe (today, daily, weekly, monthly, yearly) so you always know what to focus on, without complex projects or folders.',
   },
+  {
+    q: 'Does it have a Pomodoro focus timer?',
+    a: 'Yes. The app has a built-in Pomodoro focus timer to help you work in focused intervals. It tracks your completed cycles and celebrate your focus sessions.',
+  },
+  {
+    q: 'Can I set system alarms on Android?',
+    a: 'Yes. In addition to standard push notifications, you can toggle "Alarm-Android" when creating a reminder to schedule a native system alarm in your Android device\'s Clock app directly.',
+  },
 ];
 
 // ── SEO meta tags block ───────────────────────────────────────────────────────
@@ -113,6 +121,8 @@ const SEO_TAGS = `
         "Recurring tasks (daily, weekly, monthly, yearly)",
         "Cross-device sync",
         "Task reminders",
+        "Built-in Pomodoro focus timer",
+        "Native Android system alarms",
         "No account required",
         "Free forever",
         "Offline support",
@@ -175,6 +185,8 @@ const staticHtml = `
       <li><strong>Daily Habit Tracker:</strong> Track daily habits and routines. They reset automatically every morning.</li>
       <li><strong>Weekly &amp; Monthly Goals:</strong> Bigger tasks that span the week or month. Stay on track without micromanaging.</li>
       <li><strong>Yearly Goals:</strong> Long-term dreams and ambitions. Always visible, never forgotten.</li>
+      <li><strong>Pomodoro Focus Timer:</strong> Work in high-efficiency intervals with a built-in focus timer that tracks focus cycles.</li>
+      <li><strong>Android System Alarms:</strong> Set native, persistent alarms in your Android device's Clock app directly.</li>
       <li><strong>Reminders:</strong> Set time-based reminders for any task. Never miss what matters.</li>
       <li><strong>Cross-Device Sync:</strong> Sign in free to sync your tasks across iPhone, Android, and web instantly.</li>
     </ul>
