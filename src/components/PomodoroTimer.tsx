@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
     backgroundColor: APP_COLORS.surface,
   },
   chipText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },

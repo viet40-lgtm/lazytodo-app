@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
     color: APP_COLORS.primaryDark,
   },
   alarmChipText: {
-    fontSize: 20,
+    fontSize: 18,
   },
   actions: {
     flexDirection: 'row',
