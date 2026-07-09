@@ -354,7 +354,6 @@ const styles = StyleSheet.create({
     color: APP_COLORS.text,
   },
   nameDone: {
-    textDecorationLine: 'line-through',
     color: APP_COLORS.textMuted,
     fontWeight: '500',
   },

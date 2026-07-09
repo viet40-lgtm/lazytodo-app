@@ -125,9 +125,35 @@ export default function HomeScreen() {
     setEditingTask(null);
   }, []);
 
-  const handleSaveSubtasks = useCallback((taskId: string, subtasks: SubTask[]) => {
-    updateTask(taskId, { subtasks: subtasks.length > 0 ? subtasks : undefined });
-  }, [updateTask]);
+  const handleSaveSubtasks = useCallback((taskId: string, newSubtasks: SubTask[]) => {
+    const task = tasks.find(t => t.id === taskId);
+    const oldSubtasks = task?.subtasks ?? [];
+    
+    // Preserve previously completed subtasks not loaded in the modal
+    const completedOldSubtasks = oldSubtasks.filter(st => st.completed && !newSubtasks.some(n => n.id === st.id));
+    const combinedSubtasks = [...newSubtasks, ...completedOldSubtasks];
+    
+    // Check if any subtask was newly completed
+    const hasNewlyCompleted = newSubtasks.some(st => {
+      if (!st.completed) return false;
+      const oldSt = oldSubtasks.find(o => o.id === st.id);
+      return !oldSt || !oldSt.completed;
+    });
+
+    updateTask(taskId, { subtasks: combinedSubtasks.length > 0 ? combinedSubtasks : undefined });
+    
+    if (hasNewlyCompleted) {
+      setCompletedOpen(true);
+    }
+  }, [tasks, updateTask]);
+
+  const handleDeleteSubtask = useCallback((parentTaskId: string, subtaskId: string) => {
+    const task = tasks.find(t => t.id === parentTaskId);
+    if (task && task.subtasks) {
+      const updatedSubtasks = task.subtasks.filter(st => st.id !== subtaskId);
+      updateTask(parentTaskId, { subtasks: updatedSubtasks.length > 0 ? updatedSubtasks : undefined });
+    }
+  }, [tasks, updateTask]);
 
   const handleToggle = useCallback(
     (task: Task) => {
@@ -273,6 +299,7 @@ export default function HomeScreen() {
         tasks={tasks}
         onClose={() => setCompletedOpen(false)}
         onDelete={deleteTask}
+        onDeleteSubtask={handleDeleteSubtask}
       />
       <SettingsModal
         visible={settingsOpen}

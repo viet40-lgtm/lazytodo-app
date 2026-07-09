@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { APP_COLORS, RADIUS, SPACING, softShadow, SCREEN_PADDING } from '../constants';
+import { APP_COLORS, RADIUS, SPACING, softShadow, SCREEN_PADDING, getSectionTheme } from '../constants';
 import type { SubTask, Task } from '../types';
 import { nanoid } from 'nanoid/non-secure';
 import { formatDuration } from '../utils/time';
@@ -38,20 +38,17 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
     if (visible && task) {
       const initial = task.subtasks ?? [];
       const active = initial.filter(st => !st.completed);
-      const completed = initial.filter(st => st.completed);
-      setSubtasks([...active, ...completed]);
+      setSubtasks(active);
       setInput('');
     }
   }, [visible, task?.id]);
 
   const originalSubtasks = task?.subtasks ?? [];
   const initialActive = originalSubtasks.filter(st => !st.completed);
-  const initialCompleted = originalSubtasks.filter(st => st.completed);
-  const normalizedInitial = [...initialActive, ...initialCompleted];
+  const normalizedInitial = initialActive;
   
   const hasChanges = subtasks.length !== normalizedInitial.length || subtasks.some((st, i) => {
     const init = normalizedInitial[i];
-    // M2: also detect reordering by checking position (id mismatch at same index)
     return st.id !== init.id ||
            st.name !== init.name ||
            st.completed !== init.completed ||
@@ -84,7 +81,6 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
   };
 
   const handleToggle = (id: string) => {
-    // Only update local state — Save button commits to cloud.
     setSubtasks((prev) => {
       const target = prev.find(st => st.id === id);
       if (!target) return prev;
@@ -154,76 +150,79 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
           </View>
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <View style={styles.subtaskList}>
-              {subtasks.map((st) => (
-                <View key={st.id} style={styles.subtaskRow}>
-                  {/* 1st line: +5, +30m, time, arrow up, x */}
-                  <View style={styles.row1}>
-                    <View style={styles.row1Left}>
-                      <View style={styles.timeBtnGroup}>
-                        <Pressable
-                          style={styles.timeBtn}
-                          onPress={() => handleLogTime(st.id, 5)}
-                          hitSlop={4}
-                        >
-                          <Text style={styles.timeBtnText}>+5m</Text>
-                        </Pressable>
-                        <Pressable
-                          style={styles.timeBtn}
-                          onPress={() => handleLogTime(st.id, 30)}
-                          hitSlop={4}
-                        >
-                          <Text style={styles.timeBtnText}>+30m</Text>
-                        </Pressable>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.row1Center}>
-                      <View style={styles.spentChip}>
-                        <Text style={styles.spentText}>{formatDuration(st.timeSpent || 0)}</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.row1Right}>
-                      <View style={styles.corner}>
-                        <View style={styles.sortArrows}>
-                          <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => handleMoveUp(st.id)}>
-                            <Text style={styles.arrowText}>↑</Text>
+              {subtasks.map((st) => {
+                const theme = getSectionTheme(task.section);
+                return (
+                  <View key={st.id} style={[styles.subtaskRow, { borderLeftColor: theme.accent }]}>
+                    {/* 1st line: +5, +30m, time, arrow up, x */}
+                    <View style={styles.row1}>
+                      <View style={styles.row1Left}>
+                        <View style={styles.timeBtnGroup}>
+                          <Pressable
+                            style={styles.timeBtn}
+                            onPress={() => handleLogTime(st.id, 5)}
+                            hitSlop={4}
+                          >
+                            <Text style={styles.timeBtnText}>+5m</Text>
+                          </Pressable>
+                          <Pressable
+                            style={styles.timeBtn}
+                            onPress={() => handleLogTime(st.id, 30)}
+                            hitSlop={4}
+                          >
+                            <Text style={styles.timeBtnText}>+30m</Text>
                           </Pressable>
                         </View>
-                        <Pressable style={styles.subtaskDelete} onPress={() => handleRemove(st.id)} hitSlop={8}>
-                          <Text style={styles.subtaskDeleteText}>X</Text>
-                        </Pressable>
+                      </View>
+                      
+                      <View style={styles.row1Center}>
+                        <View style={styles.spentChip}>
+                          <Text style={styles.spentText}>{formatDuration(st.timeSpent || 0)}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.row1Right}>
+                        <View style={styles.corner}>
+                          <View style={styles.sortArrows}>
+                            <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => handleMoveUp(st.id)}>
+                              <Text style={styles.arrowText}>↑</Text>
+                            </Pressable>
+                          </View>
+                          <Pressable style={styles.subtaskDelete} onPress={() => handleRemove(st.id)} hitSlop={8}>
+                            <Text style={styles.subtaskDeleteText}>X</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* 2nd line: check off circle, name */}
+                    <View style={styles.row2}>
+                      <Pressable
+                        style={styles.subtaskCheckbox}
+                        onPress={() => handleToggle(st.id)}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: st.completed }}
+                      >
+                        {st.completed ? <Text style={styles.subtaskCheckmark}>✓</Text> : null}
+                      </Pressable>
+
+                      <View style={styles.subtaskNameCol}>
+                        <TextInput
+                          style={[
+                            styles.subtaskName, 
+                            styles.subtaskNameInput, 
+                            st.completed && styles.subtaskNameDone
+                          ]}
+                          value={st.name}
+                          onChangeText={(text) => handleEditName(st.id, text)}
+                          underlineColorAndroid="transparent"
+                          multiline={true}
+                        />
                       </View>
                     </View>
                   </View>
-
-                  {/* 2nd line: check off circle, name */}
-                  <View style={styles.row2}>
-                    <Pressable
-                      style={styles.subtaskCheckbox}
-                      onPress={() => handleToggle(st.id)}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: st.completed }}
-                    >
-                      {st.completed ? <Text style={styles.subtaskCheckmark}>✓</Text> : null}
-                    </Pressable>
-
-                    <View style={styles.subtaskNameCol}>
-                      <TextInput
-                        style={[
-                          styles.subtaskName, 
-                          styles.subtaskNameInput, 
-                          st.completed && styles.subtaskNameDone
-                        ]}
-                        value={st.name}
-                        onChangeText={(text) => handleEditName(st.id, text)}
-                        underlineColorAndroid="transparent"
-                        multiline={true}
-                      />
-                    </View>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
             <View style={styles.inputRow}>
               <TextInput
@@ -312,7 +311,8 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     padding: SCREEN_PADDING,
     backgroundColor: APP_COLORS.surface,
-    borderRadius: RADIUS.xl,
+    borderRadius: RADIUS.md,
+    borderLeftWidth: 4,
     ...softShadow(0.04, 8, 3),
   },
   row1: {
@@ -431,7 +431,6 @@ const styles = StyleSheet.create({
     }),
   },
   subtaskNameDone: {
-    textDecorationLine: 'line-through',
     color: APP_COLORS.textMuted,
     fontWeight: '500',
   },
