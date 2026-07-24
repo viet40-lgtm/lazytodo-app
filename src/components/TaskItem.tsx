@@ -8,7 +8,10 @@ import {
   softShadow,
 } from '../constants';
 import type { Recurring, Task, TaskSection } from '../types';
-import { minutesForSection } from '../utils/periodTotals';
+import {
+  minutesForSectionIncludingSubtasks,
+  totalMinutesIncludingSubtasks,
+} from '../utils/periodTotals';
 import { hasRecurring, normalizeRecurring } from '../utils/recurringList';
 import { recurringLabelShort } from '../utils/series';
 
@@ -53,9 +56,9 @@ const STAT_LABEL: Record<TaskSection, string> = {
 function getHabitStats(task: Task): { label: string; mins: number; section: TaskSection }[] {
   if (!hasRecurring(task)) return [];
   return [
-    { label: 'W:', mins: minutesForSection(task, 'weekly'), section: 'weekly' },
-    { label: 'M:', mins: minutesForSection(task, 'monthly'), section: 'monthly' },
-    { label: 'Y:', mins: minutesForSection(task, 'yearly'), section: 'yearly' },
+    { label: 'W:', mins: minutesForSectionIncludingSubtasks(task, 'weekly'), section: 'weekly' },
+    { label: 'M:', mins: minutesForSectionIncludingSubtasks(task, 'monthly'), section: 'monthly' },
+    { label: 'Y:', mins: minutesForSectionIncludingSubtasks(task, 'yearly'), section: 'yearly' },
   ];
 }
 
@@ -100,11 +103,11 @@ function TaskRow({
   //   just without a date filter). This guarantees Y: can never exceed the center total.
   // - Non-persistent recurring → this period's timeLogs only (minutesForSection)
   // - Regular tasks → spentMinutes
-  const allTimeLogMins = (task.persistent && task.timeLogs?.length)
-    ? task.timeLogs.reduce((sum, log) => sum + log.minutes, 0)
+  const allTimeLogMins = task.persistent
+    ? totalMinutesIncludingSubtasks(task)
     : null;
   const sectionMins = (hasRecurring(task) && !task.persistent)
-    ? minutesForSection(task, listSection)
+    ? minutesForSectionIncludingSubtasks(task, listSection)
     : 0;
   const displayTime = task.persistent && allTimeLogMins !== null
     ? formatDuration(allTimeLogMins)
@@ -201,7 +204,7 @@ function TaskRow({
               D:
             </Text>
             <Text style={[styles.statValue, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '800' }]}>
-              {formatDuration(hasRecurring(task) ? minutesForSection(task, 'daily') : task.spentMinutes)}
+              {formatDuration(minutesForSectionIncludingSubtasks(task, 'daily'))}
             </Text>
           </View>
         </View>

@@ -12,6 +12,7 @@ export interface SubTask {
   completed: boolean;
   completedAt?: number;
   timeSpent?: number;
+  timeLogs?: TimeLogEntry[];
   createdAt?: number;
 }
 

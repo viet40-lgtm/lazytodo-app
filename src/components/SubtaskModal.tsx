@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_COLORS, RADIUS, SPACING, softShadow, SCREEN_PADDING, getSectionTheme } from '../constants';
-import type { SubTask, Task } from '../types';
+import type { SubTask, Task, TaskSection } from '../types';
 import { nanoid } from 'nanoid/non-secure';
 import { formatDuration } from '../utils/time';
+import { minutesForTimeLogs } from '../utils/periodTotals';
 
 interface SubtaskModalProps {
   visible: boolean;
@@ -23,6 +24,12 @@ interface SubtaskModalProps {
   onLogTime?: (taskId: string, mins: number) => void;
   onClose: () => void;
 }
+
+const SUBTASK_STAT_SECTIONS: { label: string; section: TaskSection }[] = [
+  { label: 'W:', section: 'weekly' },
+  { label: 'M:', section: 'monthly' },
+  { label: 'Y:', section: 'yearly' },
+];
 
 export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: SubtaskModalProps) {
   function formatDate(ts?: number) {
@@ -110,8 +117,13 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
   const handleLogTime = (id: string, mins: number) => {
     // Only update local state — Save button commits to cloud.
     // onLogTime still fires immediately so the parent task timer advances.
+    const at = Date.now();
     setSubtasks((prev) =>
-      prev.map(st => st.id === id ? { ...st, timeSpent: (st.timeSpent || 0) + mins } : st)
+      prev.map(st => st.id === id ? {
+        ...st,
+        timeSpent: (st.timeSpent || 0) + mins,
+        timeLogs: [...(st.timeLogs ?? []), { at, minutes: mins }],
+      } : st)
     );
     if (task && onLogTime) {
       onLogTime(task.id, mins);
@@ -175,12 +187,6 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
                         </View>
                       </View>
                       
-                      <View style={styles.row1Center}>
-                        <View style={styles.spentChip}>
-                          <Text style={styles.spentText}>{formatDuration(st.timeSpent || 0)}</Text>
-                        </View>
-                      </View>
-
                       <View style={styles.row1Right}>
                         <View style={styles.corner}>
                           <View style={styles.sortArrows}>
@@ -198,7 +204,7 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
                     {/* 2nd line: check off circle, name */}
                     <View style={styles.row2}>
                       <Pressable
-                        style={styles.subtaskCheckbox}
+                        style={[styles.subtaskCheckbox, st.completed && styles.subtaskCheckboxDone]}
                         onPress={() => handleToggle(st.id)}
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked: st.completed }}
@@ -218,6 +224,27 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
                           underlineColorAndroid="transparent"
                           multiline={true}
                         />
+                      </View>
+                    </View>
+
+                    <View style={styles.bottomRow}>
+                      <View style={styles.dailyStatRow}>
+                        <View style={styles.dailyStatChip}>
+                          <Text style={styles.dailyStatLabel}>D:</Text>
+                          <Text style={styles.dailyStatValue}>
+                            {formatDuration(minutesForTimeLogs(st.timeLogs, 'daily'))}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.otherStatsRow}>
+                        {SUBTASK_STAT_SECTIONS.map(({ label, section }) => (
+                          <View key={section} style={styles.statChip}>
+                            <Text style={styles.statLabel}>{label}</Text>
+                            <Text style={styles.statValue}>
+                              {formatDuration(minutesForTimeLogs(st.timeLogs, section))}
+                            </Text>
+                          </View>
+                        ))}
                       </View>
                     </View>
                   </View>
@@ -325,11 +352,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-start',
   },
-  row1Center: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
   row1Right: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -338,6 +360,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
+    width: '100%',
+    marginTop: SPACING.xs,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     width: '100%',
     marginTop: SPACING.xs,
   },
@@ -363,13 +392,45 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0891b2',
   },
-  spentChip: {
-    paddingVertical: SPACING.sm,
+  dailyStatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  spentText: {
-    fontSize: 23,
+  dailyStatChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dailyStatLabel: {
+    fontSize: 22,
     fontWeight: '700',
     color: APP_COLORS.primary,
+  },
+  dailyStatValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: APP_COLORS.primary,
+  },
+  otherStatsRow: {
+    flexDirection: 'row',
+    gap: SPACING.xs + 2,
+  },
+  statChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  statLabel: {
+    fontSize: 20,
+    fontWeight: '500',
+    color: APP_COLORS.textSubtle,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: APP_COLORS.textMuted,
   },
   createdText: {
     fontSize: 23,
@@ -386,6 +447,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 1,
     flexShrink: 0,
+  },
+  subtaskCheckboxDone: {
+    backgroundColor: APP_COLORS.primary,
+    borderColor: APP_COLORS.primary,
   },
   subtaskCheckmark: {
     color: APP_COLORS.primary,

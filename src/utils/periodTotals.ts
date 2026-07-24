@@ -103,7 +103,54 @@ export function minutesForSection(task: Task, section: TaskSection, now = new Da
   return fromLogs;
 }
 
+function sumSubtaskMinutes(task: Task): number {
+  return (task.subtasks ?? []).reduce((sum, subtask) => sum + (subtask.timeSpent ?? 0), 0);
+}
+
+/** The parent timer already records subtask logs; only raise it for legacy gaps. */
+export function totalMinutesIncludingSubtasks(task: Task): number {
+  return Math.max(task.spentMinutes, sumSubtaskMinutes(task));
+}
+
+export function minutesForSectionIncludingSubtasks(
+  task: Task,
+  section: TaskSection,
+  now = new Date(),
+): number {
+  const subtaskMinutes = (task.subtasks ?? []).reduce(
+    (sum, subtask) => sum + minutesForTimeLogs(subtask.timeLogs, section, now),
+    0,
+  );
+  return Math.max(minutesForSection(task, section, now), subtaskMinutes);
+}
+
 export function formatSectionTime(task: Task, section: TaskSection, now = new Date()): string {
   const mins = minutesForSection(task, section, now);
   return formatDuration(mins);
+}
+
+export function minutesForTimeLogs(
+  logs: TimeLogEntry[] | undefined,
+  section: TaskSection,
+  now = new Date(),
+): number {
+  let range: { start: number; end: number };
+  switch (section) {
+    case 'today':
+    case 'daily':
+      range = dayRange(now);
+      break;
+    case 'weekly':
+      range = weekRange(now);
+      break;
+    case 'monthly':
+      range = monthRange(now);
+      break;
+    case 'yearly':
+      range = yearRange(now);
+      break;
+    default:
+      range = dayRange(now);
+  }
+  return sumTimeLogs(logs, range.start, range.end);
 }

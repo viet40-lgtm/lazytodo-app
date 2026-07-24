@@ -124,7 +124,9 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
       section: !reminderOnly && recurring.includes('daily') ? 'daily' : section,
       reminder: reminder || undefined,
       recurring: !reminderOnly && recurring.length ? recurring : undefined,
-      persistent: task?.persistent,
+      persistent: !reminderOnly && recurring.includes('daily')
+        ? true
+        : task?.persistent,
       reminderOnly: reminderOnly || undefined,
       alarm: reminder ? alarm : undefined,
     });
