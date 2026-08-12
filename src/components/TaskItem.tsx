@@ -52,14 +52,22 @@ const STAT_LABEL: Record<TaskSection, string> = {
   yearly: 'Y:',
 };
 
-/** Returns per-period time stats for a persistent habit task. */
+/** Returns per-period time stats for checked recurring options (weekly, monthly, yearly). */
 function getHabitStats(task: Task): { label: string; mins: number; section: TaskSection }[] {
-  if (!hasRecurring(task)) return [];
-  return [
-    { label: 'W:', mins: minutesForSectionIncludingSubtasks(task, 'weekly'), section: 'weekly' },
-    { label: 'M:', mins: minutesForSectionIncludingSubtasks(task, 'monthly'), section: 'monthly' },
-    { label: 'Y:', mins: minutesForSectionIncludingSubtasks(task, 'yearly'), section: 'yearly' },
-  ];
+  const repeats = normalizeRecurring(task.recurring);
+  if (repeats.length === 0) return [];
+
+  const stats: { label: string; mins: number; section: TaskSection }[] = [];
+  if (repeats.includes('weekly')) {
+    stats.push({ label: 'W:', mins: minutesForSectionIncludingSubtasks(task, 'weekly'), section: 'weekly' });
+  }
+  if (repeats.includes('monthly')) {
+    stats.push({ label: 'M:', mins: minutesForSectionIncludingSubtasks(task, 'monthly'), section: 'monthly' });
+  }
+  if (repeats.includes('yearly')) {
+    stats.push({ label: 'Y:', mins: minutesForSectionIncludingSubtasks(task, 'yearly'), section: 'yearly' });
+  }
+  return stats;
 }
 
 function formatReminder(reminder: string): string {
@@ -92,8 +100,10 @@ function TaskRow({
   onReorder,
   onManageSubtasks,
 }: TaskItemProps) {
-  // Hide the recurring chip when the stats row is visible — it already shows the periods.
-  const showsStatsRow = hasRecurring(task);
+  const repeats = normalizeRecurring(task.recurring);
+  const showDaily = repeats.includes('daily');
+  const habitStats = getHabitStats(task);
+  const showsStatsRow = habitStats.length > 0 || showDaily;
   const repeat = showsStatsRow ? null : recurringLabel(task.recurring);
   const done = task.completed;
   const hasMeta = Boolean(task.reminder || repeat);
@@ -197,24 +207,35 @@ function TaskRow({
 
       {/* Bottom line: stats on the left, date/time reminder on the right */}
       <View style={styles.bottomRow}>
-        {/* Left side: Daily stat only */}
+        {/* Left side: Daily stat only if 'daily' is checked, or Total (T:) if non-recurring with logged time */}
         <View style={styles.statsRow}>
-          <View style={styles.statChip}>
-            <Text style={[styles.statLabel, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '700' }]}>
-              D:
-            </Text>
-            <Text style={[styles.statValue, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '800' }]}>
-              {formatDuration(minutesForSectionIncludingSubtasks(task, 'daily'))}
-            </Text>
-          </View>
+          {showDaily ? (
+            <View style={styles.statChip}>
+              <Text style={[styles.statLabel, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '700' }]}>
+                D:
+              </Text>
+              <Text style={[styles.statValue, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '800' }]}>
+                {formatDuration(minutesForSectionIncludingSubtasks(task, 'daily'))}
+              </Text>
+            </View>
+          ) : (!repeats.length && task.spentMinutes > 0) ? (
+            <View style={styles.statChip}>
+              <Text style={[styles.statLabel, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '700' }]}>
+                T:
+              </Text>
+              <Text style={[styles.statValue, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '800' }]}>
+                {formatDuration(task.spentMinutes)}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Right side: W/M/Y stats and reminders */}
         <View style={styles.bottomRowRight}>
-          {/* Other stats (W/M/Y) */}
-          {showsStatsRow && (
+          {/* Other stats (W/M/Y - only shown if their respective recurring checkbox was selected) */}
+          {habitStats.length > 0 && (
             <View style={styles.otherStatsRow}>
-              {getHabitStats(task).map(({ label, mins, section }) => (
+              {habitStats.map(({ label, mins, section }) => (
                 <View
                   key={section}
                   style={[
