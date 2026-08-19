@@ -300,3 +300,15 @@ if (fs.existsSync(bingSrc)) {
 } else {
   console.warn('⚠️   BingSiteAuth.xml not found in project root — skipping.');
 }
+
+// ── favicon.png (web manifest icon) ──────────────────────────────────────────
+// Expo export only outputs favicon.ico; copy the PNG so the manifest can find it.
+const faviconSrc = path.join(__dirname, 'assets', 'favicon.png');
+const faviconDest = path.join(__dirname, 'dist', 'assets', 'favicon.png');
+if (fs.existsSync(faviconSrc)) {
+  fs.mkdirSync(path.dirname(faviconDest), { recursive: true });
+  fs.copyFileSync(faviconSrc, faviconDest);
+  console.log('✅  favicon.png copied to dist/assets/');
+} else {
+  console.warn('⚠️   assets/favicon.png not found — skipping.');
+}
