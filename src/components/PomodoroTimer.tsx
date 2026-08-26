@@ -15,6 +15,14 @@ function formatTotalTime(seconds: number) {
   return `${Math.floor(totalMinutes / 60)}h${String(totalMinutes % 60).padStart(2, '0')}`;
 }
 
+function todayLabel() {
+  return new Date().toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 let globalAudioCtx: any = null;
 
 function beep() {
@@ -79,14 +87,16 @@ export function PomodoroTimer() {
       const value = await AsyncStorage.getItem('@lazy_todo_countdown_state');
       if (!value) return;
       const saved = JSON.parse(value);
-      const remaining = Math.max(0, saved.seconds - Math.floor((Date.now() - saved.startTime) / 1000));
       const elapsed = Math.floor((Date.now() - saved.startTime) / 1000);
+      const duration = saved.seconds;
+      const cycleElapsed = elapsed % duration;
+      const remaining = cycleElapsed === 0 ? duration : duration - cycleElapsed;
       const savedGrandTotal = saved.grandTotalSeconds || 0;
       setSeconds(remaining);
-      setGrandTotalSeconds(savedGrandTotal + Math.min(elapsed, saved.seconds));
+      setGrandTotalSeconds(savedGrandTotal + elapsed);
       setCycleStartTime(saved.startTime);
-      setMinutes(String(Math.max(1, Math.floor(saved.seconds / 60))));
-      setRunning(Boolean(saved.running && remaining > 0));
+      setMinutes(String(Math.max(1, Math.floor(duration / 60))));
+      setRunning(Boolean(saved.running));
     };
     restore();
   }, []);
@@ -98,13 +108,15 @@ export function PomodoroTimer() {
       if (!value) return;
       const saved = JSON.parse(value);
       const elapsed = Math.floor((Date.now() - saved.startTime) / 1000);
-      const remaining = Math.max(0, saved.seconds - elapsed);
+      const duration = saved.seconds;
+      const cycleElapsed = elapsed % duration;
+      const remaining = cycleElapsed === 0 ? duration : duration - cycleElapsed;
       const savedGrandTotal = saved.grandTotalSeconds || 0;
       setSeconds(remaining);
-      setGrandTotalSeconds(savedGrandTotal + Math.min(elapsed, saved.seconds));
+      setGrandTotalSeconds(savedGrandTotal + elapsed);
       setCycleStartTime(saved.startTime);
-      setMinutes(String(Math.max(1, Math.floor(saved.seconds / 60))));
-      setRunning(Boolean(saved.running && remaining > 0));
+      setMinutes(String(Math.max(1, Math.floor(duration / 60))));
+      setRunning(Boolean(saved.running));
     };
     const subscription = AppState.addEventListener('change', onActive);
     return () => subscription.remove();
@@ -133,7 +145,10 @@ export function PomodoroTimer() {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Countdown</Text>
+      <View style={styles.topRow}>
+        <Text style={styles.date}>{todayLabel()}</Text>
+        <Text style={styles.title}>Countdown</Text>
+      </View>
       <View style={styles.controls}>
         <TextInput
           style={[styles.timer, running && styles.runningTimer]}
@@ -161,13 +176,15 @@ export function PomodoroTimer() {
 
 const styles = StyleSheet.create({
   card: { backgroundColor: APP_COLORS.surface, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: '#000000', padding: SPACING.lg, gap: SPACING.md, ...softShadow(0.07, 12, 4) },
-  title: { fontSize: 20, fontWeight: '700', color: APP_COLORS.primary, textAlign: 'center' },
-  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, flexWrap: 'nowrap', width: '100%' },
-  timer: { width: 110, height: 50, borderWidth: 1.5, borderColor: APP_COLORS.primary, borderRadius: RADIUS.md, paddingLeft: 1, paddingRight: 1, paddingTop: 1, paddingBottom: 1, textAlign: 'center', textAlignVertical: 'center', fontSize: 32, fontWeight: '800', color: APP_COLORS.primary },
+  title: { fontSize: 25, fontWeight: '700', color: APP_COLORS.primary, textAlign: 'center' },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
+  date: { fontSize: 25, fontWeight: '700', color: APP_COLORS.primary },
+  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 15, flexWrap: 'nowrap', width: '100%' },
+  timer: { width: 110, height: 50, borderWidth: 1.5, borderColor: APP_COLORS.primary, borderRadius: RADIUS.md, paddingLeft: 1, paddingRight: 1, paddingTop: 1, paddingBottom: 1, textAlign: 'center', textAlignVertical: 'center', fontSize: 35, fontWeight: '800', color: APP_COLORS.primary },
   runningTimer: { width: 110 },
-  button: { width: 90, height: 50, backgroundColor: APP_COLORS.primary, borderRadius: RADIUS.pill, paddingHorizontal: 2, justifyContent: 'center', alignItems: 'center', ...softShadow(0.12, 8, 3) },
-  buttonText: { color: '#fff', fontSize: 24, fontWeight: '800' },
+  button: { width: 96, height: 50, backgroundColor: APP_COLORS.primary, borderRadius: RADIUS.pill, paddingHorizontal: 7, justifyContent: 'center', alignItems: 'center', ...softShadow(0.12, 8, 3) },
+  buttonText: { color: '#fff', fontSize: 27, fontWeight: '800' },
   totalBox: { width: 110, height: 50, borderWidth: 1.5, borderColor: APP_COLORS.primary, borderRadius: RADIUS.md, paddingHorizontal: 1, justifyContent: 'center', alignItems: 'center' },
-  totalText: { fontSize: 32, fontWeight: '800', color: APP_COLORS.delete },
+  totalText: { fontSize: 35, fontWeight: '800', color: APP_COLORS.delete },
   pressed: { opacity: 0.7 },
 });

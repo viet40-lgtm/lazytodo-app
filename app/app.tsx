@@ -190,6 +190,7 @@ export default function HomeScreen() {
           if (auth.userId) forceSync();
           setAuthOpen(true);
         }}
+        onUpdatePress={() => forceSync()}
         onAddPress={() => openAdd('today')}
         loggedIn={Boolean(auth.userId)}
         syncing={syncing}

@@ -4,21 +4,14 @@ import { FloatingButton } from './FloatingButton';
 
 interface AppHeaderProps {
   onAccountPress?: () => void;
+  onUpdatePress?: () => void;
   onAddPress?: () => void;
   loggedIn?: boolean;
   syncing?: boolean;
   showAccount?: boolean;
 }
 
-function todayLabel(): string {
-  return new Date().toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-export function AppHeader({ onAccountPress, onAddPress, loggedIn = false, syncing = false, showAccount = true }: AppHeaderProps) {
+export function AppHeader({ onAccountPress, onUpdatePress, onAddPress, loggedIn = false, syncing = false, showAccount = true }: AppHeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.row}>
@@ -39,7 +32,11 @@ export function AppHeader({ onAccountPress, onAddPress, loggedIn = false, syncin
                 )}
               </Pressable>
             ) : null}
-            <Text style={styles.eyebrow}>{todayLabel()}</Text>
+            {showAccount && onUpdatePress ? (
+              <Pressable style={styles.updateBtn} onPress={onUpdatePress} accessibilityRole="button">
+                <Text style={styles.updateText}>Update</Text>
+              </Pressable>
+            ) : null}
           </View>
         </View>
         <View style={styles.rightCol}>
@@ -83,13 +80,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
-  eyebrow: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: APP_COLORS.headerMuted,
-    letterSpacing: 0.2,
-    marginBottom: 2,
-  },
   title: {
     fontSize: 30,
     fontWeight: '800',
@@ -117,6 +107,20 @@ const styles = StyleSheet.create({
   },
   accountText: {
     fontSize: 20,
+    fontWeight: '700',
+    color: APP_COLORS.headerAccent,
+  },
+  updateBtn: {
+    backgroundColor: 'rgba(134, 239, 172, 0.15)',
+    borderRadius: RADIUS.pill,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs + 2,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  updateText: {
+    fontSize: 18,
     fontWeight: '700',
     color: APP_COLORS.headerAccent,
   },
