@@ -33,7 +33,7 @@ function TaskListBase({
   const isEmpty = tasks.length === 0;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { borderColor: theme.accent }]}>
       <View style={styles.header}>
         <View style={[styles.iconBubble, { backgroundColor: theme.accentSoft }]}>
           <Text style={styles.icon}>{theme.icon}</Text>
@@ -76,6 +76,9 @@ export const TaskList = memo(TaskListBase);
 const styles = StyleSheet.create({
   container: {
     gap: SPACING.md,
+    borderWidth: 1.5,
+    borderRadius: RADIUS.md,
+    padding: SPACING.sm,
   },
   header: {
     flexDirection: 'row',

@@ -126,7 +126,7 @@ function TaskRow({
       : formatDuration(task.spentMinutes);
 
   return (
-    <View style={[styles.card, { borderLeftColor: accentColor }, done && styles.cardDone]}>
+    <View style={[styles.card, { borderColor: accentColor, borderLeftColor: accentColor }, done && styles.cardDone]}>
       {!task.reminderOnly ? <View style={styles.row1}>
         <View style={styles.row1Left}>
           <View style={styles.timeBtnGroup}>
@@ -284,6 +284,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: APP_COLORS.surface,
     borderRadius: RADIUS.md,
+    borderWidth: 1.5,
     borderLeftWidth: 4,
     padding: SPACING.md,
     gap: SPACING.sm,
