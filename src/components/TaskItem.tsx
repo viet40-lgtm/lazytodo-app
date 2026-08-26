@@ -124,64 +124,70 @@ function TaskRow({
       ? sectionMins > 0 ? formatDuration(sectionMins) : '—'
       : formatDuration(task.spentMinutes);
 
+  const renderCornerActions = () => (
+    <View style={styles.corner}>
+      <View style={styles.sortArrows}>
+        <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => onReorder(task.id, 'up')}>
+          <Text style={styles.arrowText}>↑</Text>
+        </Pressable>
+      </View>
+      <Pressable
+        style={styles.webDelete}
+        onPress={() => onDelete(task.id)}
+        accessibilityLabel={`Delete ${task.name}`}
+        hitSlop={6}
+      >
+        <Text style={styles.webDeleteText}>X</Text>
+      </Pressable>
+    </View>
+  );
+
   return (
     <View style={[styles.card, { borderColor: accentColor, borderLeftColor: accentColor }, done && styles.cardDone]}>
-      {!task.reminderOnly ? <View style={styles.row1}>
-        <View style={styles.row1Left}>
-          <View style={styles.timeBtnGroup}>
-            <Pressable
-              style={[styles.timeBtn, { backgroundColor: accentSoft }]}
-              onPress={() => onLogTime(task.id, 5)}
-              hitSlop={4}
-            >
-              <Text style={[styles.timeBtnText, { color: accentColor }]}>+5m</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.timeBtn, { backgroundColor: accentSoft }]}
-              onPress={() => onLogTime(task.id, 30)}
-              hitSlop={4}
-            >
-              <Text style={[styles.timeBtnText, { color: accentColor }]}>+30m</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.row1Right}>
-          {showDaily && (
-            <View style={styles.statChip}>
-              <Text style={[styles.statLabel, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '700' }]}>D:</Text>
-              <Text style={[styles.statValue, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '800' }]}> 
-                {formatDuration(minutesForSectionIncludingSubtasks(task, 'daily'))}
-              </Text>
-            </View>
-          )}
-          {!showDaily && listSection !== 'today' && hasRecurring(task) ? (
-            <View style={styles.statChip}>
-              <Text style={[styles.statLabel, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '700' }]}> 
-                {STAT_LABEL[listSection]}
-              </Text>
-              <Text style={[styles.statValue, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '800' }]}> 
-                {formatDuration(minutesForSectionIncludingSubtasks(task, listSection))}
-              </Text>
-            </View>
-          ) : null}
-          <View style={styles.corner}>
-            <View style={styles.sortArrows}>
-              <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => onReorder(task.id, 'up')}>
-                <Text style={styles.arrowText}>↑</Text>
+      {!task.reminderOnly && (
+        <View style={styles.row1}>
+          <View style={styles.row1Left}>
+            <View style={styles.timeBtnGroup}>
+              <Pressable
+                style={[styles.timeBtn, { backgroundColor: accentSoft }]}
+                onPress={() => onLogTime(task.id, 5)}
+                hitSlop={4}
+              >
+                <Text style={[styles.timeBtnText, { color: accentColor }]}>+5m</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.timeBtn, { backgroundColor: accentSoft }]}
+                onPress={() => onLogTime(task.id, 30)}
+                hitSlop={4}
+              >
+                <Text style={[styles.timeBtnText, { color: accentColor }]}>+30m</Text>
               </Pressable>
             </View>
-            <Pressable
-              style={styles.webDelete}
-              onPress={() => onDelete(task.id)}
-              accessibilityLabel={`Delete ${task.name}`}
-              hitSlop={6}
-            >
-              <Text style={styles.webDeleteText}>X</Text>
-            </Pressable>
+          </View>
+
+          <View style={styles.row1Right}>
+            {showDaily && (
+              <View style={styles.statChip}>
+                <Text style={[styles.statLabel, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '700' }]}>D:</Text>
+                <Text style={[styles.statValue, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '800' }]}> 
+                  {formatDuration(minutesForSectionIncludingSubtasks(task, 'daily'))}
+                </Text>
+              </View>
+            )}
+            {!showDaily && listSection !== 'today' && hasRecurring(task) ? (
+              <View style={styles.statChip}>
+                <Text style={[styles.statLabel, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '700' }]}> 
+                  {STAT_LABEL[listSection]}
+                </Text>
+                <Text style={[styles.statValue, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '800' }]}> 
+                  {formatDuration(minutesForSectionIncludingSubtasks(task, listSection))}
+                </Text>
+              </View>
+            ) : null}
+            {renderCornerActions()}
           </View>
         </View>
-      </View> : null}
+      )}
 
       {/* 2nd line: check off circle, name */}
       <View style={styles.row2}>
@@ -222,7 +228,7 @@ function TaskRow({
         ) : null}
       </View>
 
-      {hasMeta && (
+      {(hasMeta || task.reminderOnly) && (
         <View style={styles.metaContainer}>
           <Pressable style={styles.metaRowContent} onPress={() => onEdit(task)}>
             {task.reminder ? (
@@ -231,6 +237,7 @@ function TaskRow({
               </View>
             ) : null}
           </Pressable>
+          {task.reminderOnly ? renderCornerActions() : null}
         </View>
       )}
     </View>
@@ -376,15 +383,15 @@ const styles = StyleSheet.create({
   metaContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexShrink: 1,
-    maxWidth: '100%',
+    justifyContent: 'space-between',
+    width: '100%',
     gap: SPACING.sm,
   },
   metaRowContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    flex: 1,
+    flexShrink: 1,
   },
   metaChip: {
     backgroundColor: APP_COLORS.surfaceMuted,
