@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   accountText: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.headerAccent,
   },
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   updateText: {
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.headerAccent,
   },

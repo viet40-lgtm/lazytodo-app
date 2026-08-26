@@ -35,9 +35,6 @@ function TaskListBase({
   return (
     <View style={[styles.container, { borderColor: theme.accent }]}>
       <View style={styles.header}>
-        <View style={[styles.iconBubble, { backgroundColor: theme.accentSoft }]}>
-          <Text style={styles.icon}>{theme.icon}</Text>
-        </View>
         <View style={styles.headerText}>
           <Text style={[styles.title, { color: theme.accent }]}>{title}</Text>
         </View>

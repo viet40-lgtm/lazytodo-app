@@ -12,8 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_COLORS, RADIUS, SPACING, softShadow, SCREEN_PADDING, getSectionTheme } from '../constants';
-import type { SubTask, Task, TaskSection } from '../types';
+import type { SubTask, Task } from '../types';
 import { nanoid } from 'nanoid/non-secure';
+import { normalizeRecurring } from '../utils/recurringList';
+import { recurringLabelShort } from '../utils/series';
 import { formatDuration } from '../utils/time';
 import { minutesForTimeLogs } from '../utils/periodTotals';
 
@@ -24,12 +26,6 @@ interface SubtaskModalProps {
   onLogTime?: (taskId: string, mins: number) => void;
   onClose: () => void;
 }
-
-const SUBTASK_STAT_SECTIONS: { label: string; section: TaskSection }[] = [
-  { label: 'W:', section: 'weekly' },
-  { label: 'M:', section: 'monthly' },
-  { label: 'Y:', section: 'yearly' },
-];
 
 export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: SubtaskModalProps) {
   function formatDate(ts?: number) {
@@ -138,6 +134,10 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
 
   if (!task) return null;
 
+  const repeat = normalizeRecurring(task.recurring).length
+    ? recurringLabelShort(normalizeRecurring(task.recurring))
+    : null;
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <SafeAreaView style={styles.container}>
@@ -188,6 +188,12 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
                       </View>
                       
                       <View style={styles.row1Right}>
+                        <View style={styles.dailyStatChip}>
+                          <Text style={styles.dailyStatLabel}>D:</Text>
+                          <Text style={styles.dailyStatValue}>
+                            {formatDuration(minutesForTimeLogs(st.timeLogs, 'daily'))}
+                          </Text>
+                        </View>
                         <View style={styles.corner}>
                           <View style={styles.sortArrows}>
                             <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => handleMoveUp(st.id)}>
@@ -222,31 +228,11 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
                           value={st.name}
                           onChangeText={(text) => handleEditName(st.id, text)}
                           underlineColorAndroid="transparent"
-                          multiline={true}
+                          multiline={false}
                         />
                       </View>
                     </View>
 
-                    <View style={styles.bottomRow}>
-                      <View style={styles.dailyStatRow}>
-                        <View style={styles.dailyStatChip}>
-                          <Text style={styles.dailyStatLabel}>D:</Text>
-                          <Text style={styles.dailyStatValue}>
-                            {formatDuration(minutesForTimeLogs(st.timeLogs, 'daily'))}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.otherStatsRow}>
-                        {SUBTASK_STAT_SECTIONS.map(({ label, section }) => (
-                          <View key={section} style={styles.statChip}>
-                            <Text style={styles.statLabel}>{label}</Text>
-                            <Text style={styles.statValue}>
-                              {formatDuration(minutesForTimeLogs(st.timeLogs, section))}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
                   </View>
                 );
               })}
@@ -355,10 +341,12 @@ const styles = StyleSheet.create({
   row1Right: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    gap: 7,
   },
   row2: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: SPACING.md,
     width: '100%',
     marginTop: SPACING.xs,
@@ -379,7 +367,7 @@ const styles = StyleSheet.create({
   timeBtnGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
+    gap: 7,
   },
   timeBtn: {
     borderRadius: RADIUS.pill,
@@ -392,14 +380,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0891b2',
   },
-  dailyStatRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  repeatChip: {
+    borderRadius: RADIUS.pill,
+    backgroundColor: APP_COLORS.surfaceMuted,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
+  },
+  repeatText: {
+    fontSize: 21,
+    fontWeight: '700',
+    color: APP_COLORS.textMuted,
   },
   dailyStatChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
   },
   dailyStatLabel: {
     fontSize: 22,
@@ -410,27 +405,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: APP_COLORS.primary,
-  },
-  otherStatsRow: {
-    flexDirection: 'row',
-    gap: SPACING.xs + 2,
-  },
-  statChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-  },
-  statLabel: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: APP_COLORS.textSubtle,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: APP_COLORS.textMuted,
   },
   createdText: {
     fontSize: 23,
@@ -466,6 +440,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: SPACING.sm,
     minWidth: 0,
+    height: 36,
   },
   subtaskName: {
     flex: 1,
@@ -474,6 +449,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: APP_COLORS.text,
     minWidth: 0,
+    alignSelf: 'center',
     flexShrink: 1,
     ...Platform.select({
       web: {
@@ -483,10 +459,12 @@ const styles = StyleSheet.create({
     }),
   },
   subtaskNameInput: {
+    height: 36,
     padding: 0,
     margin: 0,
     borderWidth: 0,
     backgroundColor: 'transparent',
+    textAlignVertical: 'center',
     // @ts-ignore - for web/windows to remove focus outline
     outlineStyle: 'none',
     ...Platform.select({
@@ -506,7 +484,7 @@ const styles = StyleSheet.create({
   corner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: 7,
     marginTop: 1,
     flexShrink: 0,
   },

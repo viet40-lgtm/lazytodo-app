@@ -95,10 +95,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
   );
 
   const toggleRepeat = (value: Recurring) => {
-    const next = recurring.includes(value)
-      ? recurring.filter((r) => r !== value)
-      : [...recurring, value];
-    setRecurring(next);
+    setRecurring(recurring.includes(value) ? [] : [value]);
   };
 
   const handleSave = () => {
@@ -230,7 +227,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
               <>
                 <View style={styles.field}>
                   <Text style={styles.label}>
-                    Repeat <Text style={styles.optional}>(optional — pick any)</Text>
+                    Repeat <Text style={styles.optional}>(optional — pick one)</Text>
                   </Text>
                   <View style={styles.chipRow}>
                     {REPEAT_OPTIONS.map((option) => {

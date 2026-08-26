@@ -103,10 +103,9 @@ function TaskRow({
   const repeats = normalizeRecurring(task.recurring);
   const showDaily = repeats.includes('daily');
   const habitStats = getHabitStats(task);
-  const showsStatsRow = habitStats.length > 0 || showDaily;
-  const repeat = showsStatsRow ? null : recurringLabel(task.recurring);
+  const repeat = recurringLabel(task.recurring);
   const done = task.completed;
-  const hasMeta = Boolean(task.reminder || repeat);
+  const hasMeta = Boolean(task.reminder);
 
   // Center timer source:
   // - Persistent habits → sum of ALL timeLogs entries (same source as D/W/M/Y stats,
@@ -130,21 +129,6 @@ function TaskRow({
       {!task.reminderOnly ? <View style={styles.row1}>
         <View style={styles.row1Left}>
           <View style={styles.timeBtnGroup}>
-            {onManageSubtasks && (
-              <Pressable
-                style={[
-                  styles.timeBtn,
-                  { backgroundColor: (task.subtasks && task.subtasks.length > 0) ? APP_COLORS.headerBg : accentSoft }
-                ]}
-                onPress={() => onManageSubtasks?.(task.id)}
-                hitSlop={4}
-              >
-                <Text style={[
-                  styles.timeBtnText,
-                  { color: (task.subtasks && task.subtasks.length > 0) ? '#FFFFFF' : accentColor }
-                ]}>Sub-T</Text>
-              </Pressable>
-            )}
             <Pressable
               style={[styles.timeBtn, { backgroundColor: accentSoft }]}
               onPress={() => onLogTime(task.id, 5)}
@@ -163,6 +147,24 @@ function TaskRow({
         </View>
 
         <View style={styles.row1Right}>
+          {showDaily && (
+            <View style={styles.statChip}>
+              <Text style={[styles.statLabel, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '700' }]}>D:</Text>
+              <Text style={[styles.statValue, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '800' }]}> 
+                {formatDuration(minutesForSectionIncludingSubtasks(task, 'daily'))}
+              </Text>
+            </View>
+          )}
+          {!showDaily && listSection !== 'today' && hasRecurring(task) ? (
+            <View style={styles.statChip}>
+              <Text style={[styles.statLabel, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '700' }]}> 
+                {STAT_LABEL[listSection]}
+              </Text>
+              <Text style={[styles.statValue, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '800' }]}> 
+                {formatDuration(minutesForSectionIncludingSubtasks(task, listSection))}
+              </Text>
+            </View>
+          ) : null}
           <View style={styles.corner}>
             <View style={styles.sortArrows}>
               <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => onReorder(task.id, 'up')}>
@@ -202,74 +204,35 @@ function TaskRow({
             {task.name}
           </Text>
         </Pressable>
+        {onManageSubtasks && !task.reminderOnly ? (
+          <Pressable
+            style={[
+              styles.timeBtn,
+              styles.subtaskBtn,
+              { backgroundColor: (task.subtasks && task.subtasks.length > 0) ? APP_COLORS.headerBg : accentSoft },
+            ]}
+            onPress={() => onManageSubtasks?.(task.id)}
+            hitSlop={4}
+          >
+            <Text style={[
+              styles.timeBtnText,
+              { color: (task.subtasks && task.subtasks.length > 0) ? '#FFFFFF' : accentColor },
+            ]}>Sub-T</Text>
+          </Pressable>
+        ) : null}
       </View>
 
-      {/* Bottom line: stats on the left, date/time reminder on the right */}
-      <View style={styles.bottomRow}>
-        {/* Left side: Daily stat only if 'daily' is checked, or Total (T:) if non-recurring with logged time */}
-        <View style={styles.statsRow}>
-          {showDaily ? (
-            <View style={styles.statChip}>
-              <Text style={[styles.statLabel, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '700' }]}> 
-                D:
-              </Text>
-              <Text style={[styles.statValue, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '800' }]}> 
-                {formatDuration(minutesForSectionIncludingSubtasks(task, 'daily'))}
-              </Text>
-            </View>
-          ) : (!repeats.length && task.spentMinutes > 0) ? (
-            <View style={styles.statChip}>
-              <Text style={[styles.statLabel, { fontSize: 21, color: APP_COLORS.primary, fontWeight: '700' }]}> 
-                T:
-              </Text>
-              <Text style={[styles.statValue, { fontSize: 21, color: APP_COLORS.primary, fontWeight: '800' }]}> 
-                {formatDuration(task.spentMinutes)}
-              </Text>
-            </View>
-          ) : null}
+      {hasMeta && (
+        <View style={styles.metaContainer}>
+          <Pressable style={styles.metaRowContent} onPress={() => onEdit(task)}>
+            {task.reminder ? (
+              <View style={styles.metaChip}>
+                <Text style={styles.metaText}>{formatReminder(task.reminder)}</Text>
+              </View>
+            ) : null}
+          </Pressable>
         </View>
-
-        {/* Right side: W/M/Y stats and reminders */}
-        <View style={styles.bottomRowRight}>
-          {/* Other stats (W/M/Y - only shown if their respective recurring checkbox was selected) */}
-          {habitStats.length > 0 && (
-            <View style={styles.otherStatsRow}>
-              {habitStats.map(({ label, mins, section }) => (
-                <View
-                  key={section}
-                  style={[
-                    styles.statChip,
-                    section === listSection && { borderColor: accentColor },
-                  ]}
-                >
-                  <Text style={styles.statLabel}>{label}</Text>
-                  <Text style={[styles.statValue, mins > 0 && { color: accentColor }]}>
-                    {formatDuration(mins)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Reminder / metadata on the right */}
-          {hasMeta && (
-            <View style={styles.metaContainer}>
-              <Pressable style={styles.metaRowContent} onPress={() => onEdit(task)}>
-                {task.reminder ? (
-                  <View style={styles.metaChip}>
-                    <Text style={styles.metaText}>{formatReminder(task.reminder)}</Text>
-                  </View>
-                ) : null}
-                {repeat ? (
-                  <View style={styles.metaChip}>
-                    <Text style={styles.metaText}>↻ {repeat}</Text>
-                  </View>
-                ) : null}
-              </Pressable>
-            </View>
-          )}
-        </View>
-      </View>
+      )}
     </View>
   );
 }
@@ -316,6 +279,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     flexShrink: 0,
+    gap: 7,
   },
   row2: {
     flexDirection: 'row',
@@ -445,7 +409,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'nowrap',
-    gap: SPACING.xs,
+    gap: 7,
   },
   timeBtn: {
     borderRadius: RADIUS.pill,
@@ -455,6 +419,20 @@ const styles = StyleSheet.create({
   timeBtnText: {
     fontSize: 21,
     fontWeight: '700',
+  },
+  repeatChip: {
+    backgroundColor: APP_COLORS.surfaceMuted,
+    borderRadius: RADIUS.pill,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 6,
+  },
+  repeatText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: APP_COLORS.textMuted,
+  },
+  subtaskBtn: {
+    marginLeft: 'auto',
   },
   spentChip: {
     paddingVertical: SPACING.sm,
@@ -472,7 +450,7 @@ const styles = StyleSheet.create({
   corner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: 7,
     marginTop: 1,
   },
   createdText: {
