@@ -25,6 +25,24 @@ const SECTION_REPEAT: Record<TaskSection, Recurring[]> = {
  */
 const PERIOD_PRIORITY: TaskSection[] = ['daily', 'weekly', 'monthly', 'yearly'];
 
+export function sectionForReminder(reminder: string, now = new Date()): TaskSection {
+  const pickedDate = new Date(reminder);
+  if (isNaN(pickedDate.getTime())) return 'today';
+
+  const pickedDay = new Date(pickedDate.getFullYear(), pickedDate.getMonth(), pickedDate.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (pickedDay.getTime() <= today.getTime()) return 'today';
+
+  const weekStart = new Date(today);
+  const day = weekStart.getDay();
+  weekStart.setDate(weekStart.getDate() + (day === 0 ? -6 : 1 - day));
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  return pickedDay.getTime() <= weekEnd.getTime() ? 'weekly' : 'monthly';
+}
+
 export function primarySection(repeats: Recurring[]): TaskSection | null {
   for (const sec of PERIOD_PRIORITY) {
     if (SECTION_REPEAT[sec].some((r) => repeats.includes(r))) return sec;
@@ -54,9 +72,11 @@ export function taskShowsInSection(
   }
 
   if (section === 'today' && task.section !== 'daily' && task.reminder) {
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
-    if (new Date(task.reminder).getTime() <= todayEnd.getTime()) return true;
+    return sectionForReminder(task.reminder, new Date(now)) === 'today';
+  }
+
+  if (task.reminder && task.section !== 'daily') {
+    return sectionForReminder(task.reminder, new Date(now)) === section;
   }
 
   return task.section === section;

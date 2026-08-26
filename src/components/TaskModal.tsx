@@ -22,6 +22,7 @@ import {
 } from '../constants';
 import type { Recurring, Task, TaskSection } from '../types';
 import { normalizeRecurring } from '../utils/recurringList';
+import { sectionForReminder } from '../utils/recurringList';
 import { DateTimePickerUI } from './DateTimePickerUI';
 
 interface TaskModalProps {
@@ -79,20 +80,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
     const pickedDate = new Date(reminder);
     if (isNaN(pickedDate.getTime())) return;
 
-    const now = new Date();
-    const pickedDay = new Date(pickedDate.getFullYear(), pickedDate.getMonth(), pickedDate.getDate()).getTime();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const diffDays = (pickedDay - today) / (24 * 60 * 60 * 1000);
-
-    if (diffDays <= 0) {
-      setSection('today');
-    } else if (diffDays <= 7) {
-      setSection('weekly');
-    } else if (diffDays <= 30) {
-      setSection('monthly');
-    } else {
-      setSection('yearly');
-    }
+    setSection(sectionForReminder(reminder));
   }, [reminder]);
 
   const requiresReminder = false;
