@@ -10,6 +10,10 @@ function formatTime(seconds: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
+function formatTotalTime(seconds: number) {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
 let globalAudioCtx: any = null;
 
 function beep() {
@@ -41,6 +45,7 @@ async function beepCycle(count: number) {
 export function PomodoroTimer() {
   const [minutes, setMinutes] = useState(String(DEFAULT_MINUTES));
   const [seconds, setSeconds] = useState(DEFAULT_MINUTES * 60);
+  const [totalSeconds, setTotalSeconds] = useState(DEFAULT_MINUTES * 60);
   const [running, setRunning] = useState(false);
 
   useEffect(() => {
@@ -68,8 +73,10 @@ export function PomodoroTimer() {
       if (!value) return;
       const saved = JSON.parse(value);
       const remaining = Math.max(0, saved.seconds - Math.floor((Date.now() - saved.startTime) / 1000));
+      const savedTotalSeconds = saved.totalSeconds || saved.seconds;
       setSeconds(remaining);
-      setMinutes(String(Math.max(1, Math.ceil(remaining / 60))));
+      setTotalSeconds(savedTotalSeconds);
+      setMinutes(String(Math.max(1, Math.floor(savedTotalSeconds / 60))));
       setRunning(Boolean(saved.running && remaining > 0));
     };
     restore();
@@ -82,7 +89,10 @@ export function PomodoroTimer() {
       if (!value) return;
       const saved = JSON.parse(value);
       const remaining = Math.max(0, saved.seconds - Math.floor((Date.now() - saved.startTime) / 1000));
+      const savedTotalSeconds = saved.totalSeconds || saved.seconds;
       setSeconds(remaining);
+      setTotalSeconds(savedTotalSeconds);
+      setMinutes(String(Math.max(1, Math.floor(savedTotalSeconds / 60))));
       setRunning(Boolean(saved.running && remaining > 0));
     };
     const subscription = AppState.addEventListener('change', onActive);
@@ -93,6 +103,7 @@ export function PomodoroTimer() {
     if (running) {
       setRunning(false);
       setSeconds(Math.max(1, Number(minutes) || DEFAULT_MINUTES) * 60);
+      setTotalSeconds(Math.max(1, Number(minutes) || DEFAULT_MINUTES) * 60);
       await AsyncStorage.removeItem('@lazy_todo_countdown_state');
       return;
     }
@@ -100,8 +111,9 @@ export function PomodoroTimer() {
     const selectedSeconds = selectedMinutes * 60;
     setMinutes(String(selectedMinutes));
     setSeconds(selectedSeconds);
+    setTotalSeconds(selectedSeconds);
     setRunning(true);
-    await AsyncStorage.setItem('@lazy_todo_countdown_state', JSON.stringify({ running: true, startTime: Date.now(), seconds: selectedSeconds }));
+    await AsyncStorage.setItem('@lazy_todo_countdown_state', JSON.stringify({ running: true, startTime: Date.now(), seconds: selectedSeconds, totalSeconds: selectedSeconds }));
     if (Platform.OS !== 'web') await setSystemAlarm('Countdown Done', selectedSeconds);
   };
 
@@ -123,6 +135,11 @@ export function PomodoroTimer() {
         <Pressable style={({ pressed }) => [styles.button, pressed && styles.pressed]} onPress={toggle}>
           <Text style={styles.buttonText}>{running ? 'Reset' : 'Start'}</Text>
         </Pressable>
+        <View style={styles.totalBox}>
+          <Text style={styles.totalText}>
+            {formatTotalTime(totalSeconds)}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -136,5 +153,7 @@ const styles = StyleSheet.create({
   runningTimer: { width: 110 },
   button: { width: 90, height: 50, backgroundColor: APP_COLORS.primary, borderRadius: RADIUS.pill, paddingHorizontal: 2, justifyContent: 'center', alignItems: 'center', ...softShadow(0.12, 8, 3) },
   buttonText: { color: '#fff', fontSize: 24, fontWeight: '800' },
+  totalBox: { width: 110, height: 50, borderWidth: 1.5, borderColor: APP_COLORS.primary, borderRadius: RADIUS.md, paddingHorizontal: 1, justifyContent: 'center', alignItems: 'center' },
+  totalText: { fontSize: 32, fontWeight: '800', color: APP_COLORS.delete },
   pressed: { opacity: 0.7 },
 });
