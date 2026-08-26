@@ -91,14 +91,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   icon: {
-    fontSize: 30,
+    fontSize: 28,
   },
   headerText: {
     flex: 1,
     minWidth: 0,
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
@@ -114,8 +114,8 @@ const styles = StyleSheet.create({
     backgroundColor: APP_COLORS.surfaceMuted,
   },
   emptyText: {
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 18,
+    lineHeight: 21,
     color: APP_COLORS.textMuted,
   },
 });

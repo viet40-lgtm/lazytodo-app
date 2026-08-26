@@ -21,6 +21,7 @@
     "@react-native-picker/picker": "2.11.4",
     "@supabase/supabase-js": "^2.108.1",
     "expo": "~55.0.26",
+    "expo-audio": "~55.0.18",
     "expo-constants": "~55.0.16",
     "expo-intent-launcher": "~55.0.13",
     "expo-linking": "~55.0.15",

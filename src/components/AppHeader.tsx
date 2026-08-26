@@ -55,6 +55,7 @@ export function AppHeader({ onAccountPress, onAddPress, loggedIn = false, syncin
 const styles = StyleSheet.create({
   container: {
     backgroundColor: APP_COLORS.headerBg,
+    position: 'relative',
     padding: 10,
     borderBottomLeftRadius: RADIUS.xl,
     borderBottomRightRadius: RADIUS.xl,
@@ -68,6 +69,7 @@ const styles = StyleSheet.create({
   },
   leftCol: {
     flex: 1,
+    minWidth: 0,
     gap: SPACING.xs,
   },
   dateRow: {
@@ -95,6 +97,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   rightCol: {
+    position: 'absolute',
+    right: 10,
+    top: 0,
+    bottom: 0,
+    width: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },

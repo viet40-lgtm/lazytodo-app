@@ -108,6 +108,12 @@ export function DateTimePickerUI({ value, onChange }: { value: string; onChange:
             </Pressable>
           </View>
 
+          <View style={styles.actions}>
+            <Pressable style={styles.primaryBtn} onPress={handleConfirm}>
+              <Text style={styles.primaryBtnText}>Confirm Date & Time</Text>
+            </Pressable>
+          </View>
+
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: SCREEN_PADDING, gap: SPACING.xl }}>
             
             {/* Calendar View */}
@@ -167,11 +173,6 @@ export function DateTimePickerUI({ value, onChange }: { value: string; onChange:
 
           </ScrollView>
 
-          <View style={styles.actions}>
-            <Pressable style={styles.primaryBtn} onPress={handleConfirm}>
-              <Text style={styles.primaryBtnText}>Confirm Date & Time</Text>
-            </Pressable>
-          </View>
         </SafeAreaView>
       </Modal>
     </>
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   inputText: {
-    fontSize: 25,
+    fontSize: 26,
     color: APP_COLORS.text,
   },
   inputPlaceholder: {
@@ -209,7 +210,7 @@ const styles = StyleSheet.create({
     ...softShadow(0.1, 8, 4),
   },
   title: {
-    fontSize: 24,
+    fontSize: 25,
     fontWeight: '800',
     color: APP_COLORS.headerText,
   },
@@ -223,7 +224,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 20,
+    fontSize: 21,
     lineHeight: 25,
     fontWeight: '700',
     color: APP_COLORS.headerMuted,
@@ -241,7 +242,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   monthText: {
-    fontSize: 25,
+    fontSize: 26,
     fontWeight: '700',
     color: APP_COLORS.text,
   },
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.sm,
   },
   arrowText: {
-    fontSize: 25,
+    fontSize: 26,
     fontWeight: '800',
     color: APP_COLORS.primary,
   },
@@ -262,7 +263,7 @@ const styles = StyleSheet.create({
   dayLabel: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -281,7 +282,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
   },
   cellText: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '500',
     color: APP_COLORS.text,
   },
@@ -290,7 +291,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   timeLabel: {
-    fontSize: 25,
+    fontSize: 26,
     fontWeight: '700',
     color: APP_COLORS.text,
     marginBottom: SPACING.md,
@@ -313,12 +314,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   timeValue: {
-    fontSize: 32,
+    fontSize: 33,
     fontWeight: '800',
     color: APP_COLORS.text,
   },
   timeColon: {
-    fontSize: 32,
+    fontSize: 33,
     fontWeight: '800',
     color: APP_COLORS.textMuted,
     paddingBottom: 4,
@@ -331,7 +332,7 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.md,
   },
   ampmText: {
-    fontSize: 25,
+    fontSize: 26,
     fontWeight: '800',
     color: APP_COLORS.primaryDark,
   },
@@ -350,7 +351,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: APP_COLORS.fabText,
-    fontSize: 25,
+    fontSize: 26,
     fontWeight: '700',
   },
 });

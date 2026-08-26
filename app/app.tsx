@@ -322,6 +322,7 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: APP_COLORS.background,
+    overflow: 'hidden',
   },
   loading: {
     flex: 1,
@@ -334,6 +335,7 @@ const styles = StyleSheet.create({
     paddingBottom: SCREEN_PADDING + FAB_SIZE + SCREEN_PADDING,
     gap: 24,
     width: '100%',
+    overflow: 'hidden',
   },
   completedBtn: {
     backgroundColor: APP_COLORS.primary,

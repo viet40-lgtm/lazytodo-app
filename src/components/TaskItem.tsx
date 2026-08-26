@@ -127,8 +127,7 @@ function TaskRow({
 
   return (
     <View style={[styles.card, { borderLeftColor: accentColor }, done && styles.cardDone]}>
-      {/* 1st line: +5, +30m, arrow up, x */}
-      <View style={styles.row1}>
+      {!task.reminderOnly ? <View style={styles.row1}>
         <View style={styles.row1Left}>
           <View style={styles.timeBtnGroup}>
             {onManageSubtasks && (
@@ -180,7 +179,7 @@ function TaskRow({
             </Pressable>
           </View>
         </View>
-      </View>
+      </View> : null}
 
       {/* 2nd line: check off circle, name */}
       <View style={styles.row2}>
@@ -211,19 +210,19 @@ function TaskRow({
         <View style={styles.statsRow}>
           {showDaily ? (
             <View style={styles.statChip}>
-              <Text style={[styles.statLabel, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '700' }]}>
+              <Text style={[styles.statLabel, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '700' }]}> 
                 D:
               </Text>
-              <Text style={[styles.statValue, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '800' }]}>
+              <Text style={[styles.statValue, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '800' }]}> 
                 {formatDuration(minutesForSectionIncludingSubtasks(task, 'daily'))}
               </Text>
             </View>
           ) : (!repeats.length && task.spentMinutes > 0) ? (
             <View style={styles.statChip}>
-              <Text style={[styles.statLabel, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '700' }]}>
+              <Text style={[styles.statLabel, { fontSize: 21, color: APP_COLORS.primary, fontWeight: '700' }]}> 
                 T:
               </Text>
-              <Text style={[styles.statValue, { fontSize: 22, color: APP_COLORS.primary, fontWeight: '800' }]}>
+              <Text style={[styles.statValue, { fontSize: 21, color: APP_COLORS.primary, fontWeight: '800' }]}> 
                 {formatDuration(task.spentMinutes)}
               </Text>
             </View>
@@ -297,11 +296,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'nowrap',
     width: '100%',
+    rowGap: SPACING.xs,
   },
   row1Left: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
+    flexShrink: 1,
+    minWidth: 0,
   },
   row1Center: {
     flex: 1,
@@ -311,6 +314,7 @@ const styles = StyleSheet.create({
   row1Right: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    flexShrink: 0,
   },
   row2: {
     flexDirection: 'row',
@@ -319,7 +323,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   dateLabel: {
-    fontSize: 23,
+    fontSize: 21,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
     minWidth: 45,
@@ -340,9 +344,9 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: '#ffffff',
-    fontSize: 25,
+    fontSize: 23,
     fontWeight: '800',
-    lineHeight: 25,
+    lineHeight: 22,
     marginTop: -2,
   },
   sortArrows: {
@@ -351,19 +355,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sortArrowBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 2,
     borderColor: APP_COLORS.delete,
     alignItems: 'center',
     justifyContent: 'center',
   },
   arrowText: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '900',
     color: APP_COLORS.delete,
-    lineHeight: 32,
+    lineHeight: 29,
     marginTop: -4,
   },
   titleArea: {
@@ -372,8 +376,8 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   name: {
-    fontSize: 25,
-    lineHeight: 28,
+    fontSize: 23,
+    lineHeight: 25,
     fontWeight: '600',
     color: APP_COLORS.text,
   },
@@ -385,24 +389,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
     width: '100%',
-    marginTop: 4,
+    marginTop: -4,
     gap: SPACING.xs,
   },
   bottomRowRight: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
+    flexWrap: 'wrap',
+    maxWidth: '100%',
     gap: SPACING.md,
   },
   otherStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: SPACING.xs + 2,
   },
   metaContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 1,
+    maxWidth: '100%',
     gap: SPACING.sm,
   },
   metaRowContent: {
@@ -416,11 +426,13 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     paddingHorizontal: SPACING.sm + 2,
     paddingVertical: 3,
+    maxWidth: '100%',
   },
   metaText: {
-    fontSize: 23,
+    fontSize: 21,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
+    flexShrink: 1,
   },
   actionRow: {
     flexDirection: 'row',
@@ -431,6 +443,7 @@ const styles = StyleSheet.create({
   timeBtnGroup: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'nowrap',
     gap: SPACING.xs,
   },
   timeBtn: {
@@ -439,14 +452,14 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   timeBtnText: {
-    fontSize: 23,
+    fontSize: 21,
     fontWeight: '700',
   },
   spentChip: {
     paddingVertical: SPACING.sm,
   },
   spentText: {
-    fontSize: 23,
+    fontSize: 21,
     fontWeight: '700',
     color: APP_COLORS.primary,
   },
@@ -462,23 +475,23 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   createdText: {
-    fontSize: 23,
+    fontSize: 21,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
   },
 
   webDelete: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 2,
     borderColor: APP_COLORS.delete,
     alignItems: 'center',
     justifyContent: 'center',
   },
   webDeleteText: {
-    fontSize: 23,
-    lineHeight: 25,
+    fontSize: 21,
+    lineHeight: 22,
     color: APP_COLORS.delete,
     fontWeight: '700',
     marginTop: -2,
