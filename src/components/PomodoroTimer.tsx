@@ -11,7 +11,8 @@ function formatTime(seconds: number) {
 }
 
 function formatTotalTime(seconds: number) {
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  const totalMinutes = Math.floor(seconds / 60);
+  return `${Math.floor(totalMinutes / 60)}h${String(totalMinutes % 60).padStart(2, '0')}`;
 }
 
 let globalAudioCtx: any = null;
@@ -45,12 +46,16 @@ async function beepCycle(count: number) {
 export function PomodoroTimer() {
   const [minutes, setMinutes] = useState(String(DEFAULT_MINUTES));
   const [seconds, setSeconds] = useState(DEFAULT_MINUTES * 60);
-  const [totalSeconds, setTotalSeconds] = useState(DEFAULT_MINUTES * 60);
+  const [grandTotalSeconds, setGrandTotalSeconds] = useState(0);
+  const [cycleStartTime, setCycleStartTime] = useState(0);
   const [running, setRunning] = useState(false);
 
   useEffect(() => {
     if (!running || seconds <= 0) return;
-    const timer = setTimeout(() => setSeconds((value) => value - 1), 1000);
+    const timer = setTimeout(() => {
+      setSeconds((value) => value - 1);
+      setGrandTotalSeconds((value) => value + 1);
+    }, 1000);
     return () => clearTimeout(timer);
   }, [running, seconds]);
 
@@ -58,14 +63,16 @@ export function PomodoroTimer() {
     if (running && seconds === 0) {
       const cycleMinutes = Math.max(1, Number(minutes) || DEFAULT_MINUTES);
       const cycleSeconds = cycleMinutes * 60;
+      const nextCycleStartTime = Date.now();
       setSeconds(cycleSeconds);
+      setCycleStartTime(nextCycleStartTime);
       void beepCycle(cycleMinutes);
       void AsyncStorage.setItem(
         '@lazy_todo_countdown_state',
-        JSON.stringify({ running: true, startTime: Date.now(), seconds: cycleSeconds }),
+        JSON.stringify({ running: true, startTime: nextCycleStartTime, seconds: cycleSeconds, grandTotalSeconds }),
       );
     }
-  }, [minutes, running, seconds]);
+  }, [grandTotalSeconds, minutes, running, seconds]);
 
   useEffect(() => {
     const restore = async () => {
@@ -73,10 +80,12 @@ export function PomodoroTimer() {
       if (!value) return;
       const saved = JSON.parse(value);
       const remaining = Math.max(0, saved.seconds - Math.floor((Date.now() - saved.startTime) / 1000));
-      const savedTotalSeconds = saved.totalSeconds || saved.seconds;
+      const elapsed = Math.floor((Date.now() - saved.startTime) / 1000);
+      const savedGrandTotal = saved.grandTotalSeconds || 0;
       setSeconds(remaining);
-      setTotalSeconds(savedTotalSeconds);
-      setMinutes(String(Math.max(1, Math.floor(savedTotalSeconds / 60))));
+      setGrandTotalSeconds(savedGrandTotal + Math.min(elapsed, saved.seconds));
+      setCycleStartTime(saved.startTime);
+      setMinutes(String(Math.max(1, Math.floor(saved.seconds / 60))));
       setRunning(Boolean(saved.running && remaining > 0));
     };
     restore();
@@ -88,11 +97,13 @@ export function PomodoroTimer() {
       const value = await AsyncStorage.getItem('@lazy_todo_countdown_state');
       if (!value) return;
       const saved = JSON.parse(value);
-      const remaining = Math.max(0, saved.seconds - Math.floor((Date.now() - saved.startTime) / 1000));
-      const savedTotalSeconds = saved.totalSeconds || saved.seconds;
+      const elapsed = Math.floor((Date.now() - saved.startTime) / 1000);
+      const remaining = Math.max(0, saved.seconds - elapsed);
+      const savedGrandTotal = saved.grandTotalSeconds || 0;
       setSeconds(remaining);
-      setTotalSeconds(savedTotalSeconds);
-      setMinutes(String(Math.max(1, Math.floor(savedTotalSeconds / 60))));
+      setGrandTotalSeconds(savedGrandTotal + Math.min(elapsed, saved.seconds));
+      setCycleStartTime(saved.startTime);
+      setMinutes(String(Math.max(1, Math.floor(saved.seconds / 60))));
       setRunning(Boolean(saved.running && remaining > 0));
     };
     const subscription = AppState.addEventListener('change', onActive);
@@ -103,7 +114,8 @@ export function PomodoroTimer() {
     if (running) {
       setRunning(false);
       setSeconds(Math.max(1, Number(minutes) || DEFAULT_MINUTES) * 60);
-      setTotalSeconds(Math.max(1, Number(minutes) || DEFAULT_MINUTES) * 60);
+      setGrandTotalSeconds(0);
+      setCycleStartTime(0);
       await AsyncStorage.removeItem('@lazy_todo_countdown_state');
       return;
     }
@@ -111,9 +123,11 @@ export function PomodoroTimer() {
     const selectedSeconds = selectedMinutes * 60;
     setMinutes(String(selectedMinutes));
     setSeconds(selectedSeconds);
-    setTotalSeconds(selectedSeconds);
+    setGrandTotalSeconds(0);
+    const startTime = Date.now();
+    setCycleStartTime(startTime);
     setRunning(true);
-    await AsyncStorage.setItem('@lazy_todo_countdown_state', JSON.stringify({ running: true, startTime: Date.now(), seconds: selectedSeconds, totalSeconds: selectedSeconds }));
+    await AsyncStorage.setItem('@lazy_todo_countdown_state', JSON.stringify({ running: true, startTime, seconds: selectedSeconds, grandTotalSeconds: 0 }));
     if (Platform.OS !== 'web') await setSystemAlarm('Countdown Done', selectedSeconds);
   };
 
@@ -137,7 +151,7 @@ export function PomodoroTimer() {
         </Pressable>
         <View style={styles.totalBox}>
           <Text style={styles.totalText}>
-            {formatTotalTime(totalSeconds)}
+            {formatTotalTime(grandTotalSeconds)}
           </Text>
         </View>
       </View>
