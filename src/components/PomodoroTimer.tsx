@@ -150,7 +150,7 @@ export function PomodoroTimer() {
         <Text style={styles.title}>Countdown</Text>
       </View>
       <View style={styles.controls}>
-        <TextInput
+         <TextInput
           style={[styles.timer, running && styles.runningTimer]}
           value={running ? formatTime(seconds) : formatTime(Math.max(1, Number(minutes) || DEFAULT_MINUTES) * 60)}
           onChangeText={(value) => setMinutes(value.replace(/[^0-9]/g, ''))}
@@ -162,10 +162,10 @@ export function PomodoroTimer() {
           accessibilityLabel="Countdown minutes"
         />
         <Pressable style={({ pressed }) => [styles.button, pressed && styles.pressed]} onPress={toggle}>
-          <Text style={styles.buttonText}>{running ? 'Reset' : 'Start'}</Text>
+           <Text style={styles.buttonText}>{running ? 'Reset' : 'Start'}</Text>
         </Pressable>
         <View style={styles.totalBox}>
-          <Text style={styles.totalText}>
+           <Text style={styles.totalText}>
             {formatTotalTime(grandTotalSeconds)}
           </Text>
         </View>
@@ -180,11 +180,11 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
   date: { fontSize: 25, fontWeight: '700', color: APP_COLORS.primary },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 15, flexWrap: 'nowrap', width: '100%' },
-  timer: { width: 110, height: 50, borderWidth: 1.5, borderColor: APP_COLORS.primary, borderRadius: RADIUS.md, paddingLeft: 1, paddingRight: 1, paddingTop: 1, paddingBottom: 1, textAlign: 'center', textAlignVertical: 'center', fontSize: 35, fontWeight: '800', color: APP_COLORS.primary },
+   timer: { width: 110, height: 50, borderWidth: 1.5, borderColor: APP_COLORS.primary, borderRadius: RADIUS.md, paddingLeft: 1, paddingRight: 1, paddingTop: 1, paddingBottom: 1, textAlign: 'center', textAlignVertical: 'center', fontSize: 30, fontWeight: '800', color: APP_COLORS.primary },
   runningTimer: { width: 110 },
   button: { width: 96, height: 50, backgroundColor: APP_COLORS.primary, borderRadius: RADIUS.pill, paddingHorizontal: 7, justifyContent: 'center', alignItems: 'center', ...softShadow(0.12, 8, 3) },
-  buttonText: { color: '#fff', fontSize: 27, fontWeight: '800' },
+   buttonText: { color: '#fff', fontSize: 30, fontWeight: '800' },
   totalBox: { width: 110, height: 50, borderWidth: 1.5, borderColor: APP_COLORS.primary, borderRadius: RADIUS.md, paddingHorizontal: 1, justifyContent: 'center', alignItems: 'center' },
-  totalText: { fontSize: 35, fontWeight: '800', color: APP_COLORS.delete },
+   totalText: { fontSize: 30, fontWeight: '800', color: APP_COLORS.delete },
   pressed: { opacity: 0.7 },
 });

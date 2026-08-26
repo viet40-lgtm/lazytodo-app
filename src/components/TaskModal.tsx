@@ -23,6 +23,8 @@ import {
 import type { Recurring, Task, TaskSection } from '../types';
 import { normalizeRecurring } from '../utils/recurringList';
 import { sectionForReminder } from '../utils/recurringList';
+import { formatDuration } from '../utils/time';
+import { minutesForSectionIncludingSubtasks } from '../utils/periodTotals';
 import { DateTimePickerUI } from './DateTimePickerUI';
 
 interface TaskModalProps {
@@ -216,7 +218,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                 </View>
                 {reminder ? (
                   <Pressable onPress={() => setReminder('')} style={{ padding: 8 }}>
-                    <Text style={{ color: APP_COLORS.delete, fontSize: 16, fontWeight: '600' }}>Clear</Text>
+                    <Text style={{ color: APP_COLORS.delete, fontSize: 25, fontWeight: '600' }}>Clear</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -233,17 +235,21 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                     {REPEAT_OPTIONS.map((option) => {
                       const selected = recurring.includes(option.value);
                       return (
-                        <Pressable
-                          key={option.label}
-                          onPress={() => toggleRepeat(option.value)}
-                          accessibilityRole="button"
-                          accessibilityState={{ selected }}
-                          style={[styles.chip, selected && styles.chipSelected]}
-                        >
-                          <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                            {option.label}
+                        <View key={option.label} style={styles.repeatOption}>
+                          <Pressable
+                            onPress={() => toggleRepeat(option.value)}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected }}
+                            style={[styles.chip, selected && styles.chipSelected]}
+                          >
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                              {option.label}
+                            </Text>
+                          </Pressable>
+                          <Text style={[styles.repeatTotal, { color: SECTION_THEMES[option.value].accent }]}> 
+                            {task ? formatDuration(minutesForSectionIncludingSubtasks(task, option.value)) : '0h00'}
                           </Text>
-                        </Pressable>
+                        </View>
                       );
                     })}
                   </View>
@@ -285,7 +291,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef3c7',
   },
   typeTabText: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -319,7 +325,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   subtitle: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '500',
     color: APP_COLORS.headerMuted,
     marginTop: 2,
@@ -334,7 +340,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 30,
+    fontSize: 25,
     lineHeight: 30,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -371,7 +377,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   label: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.text,
   },
@@ -382,7 +388,7 @@ const styles = StyleSheet.create({
   requiredHint: {
     fontWeight: '500',
     color: APP_COLORS.delete,
-    fontSize: 14,
+    fontSize: 25,
   },
   input: {
     fontSize: 25,
@@ -399,6 +405,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: SPACING.sm,
+  },
+  repeatOption: {
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  repeatTotal: {
+    fontSize: 25,
+    fontWeight: '700',
   },
   chip: {
     flexDirection: 'row',
@@ -427,7 +441,7 @@ const styles = StyleSheet.create({
     color: APP_COLORS.primaryDark,
   },
   alarmChipText: {
-    fontSize: 18,
+    fontSize: 25,
   },
   actions: {
     flexDirection: 'row',
@@ -455,7 +469,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: '600',
   },
   secondaryBtn: {

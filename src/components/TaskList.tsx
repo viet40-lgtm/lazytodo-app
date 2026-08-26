@@ -4,6 +4,7 @@ import { APP_COLORS, RADIUS, SPACING, getSectionTheme } from '../constants';
 import type { Task, TaskSection } from '../types';
 import { TaskItem } from './TaskItem';
 
+
 interface TaskListProps {
   section: TaskSection;
   title: string;
@@ -91,14 +92,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   icon: {
-    fontSize: 28,
+    fontSize: 25,
   },
   headerText: {
     flex: 1,
     minWidth: 0,
   },
   title: {
-    fontSize: 28,
+    fontSize: 25,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
@@ -114,7 +115,7 @@ const styles = StyleSheet.create({
     backgroundColor: APP_COLORS.surfaceMuted,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 25,
     lineHeight: 21,
     color: APP_COLORS.textMuted,
   },
