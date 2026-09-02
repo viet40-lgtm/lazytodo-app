@@ -23,6 +23,13 @@ function getLocalJournals(): JournalEntry[] {
   }
 }
 
+function hasJournalContent(j: JournalEntry): boolean {
+  return Boolean(
+    (j.thoughts && j.thoughts.trim().length > 0) ||
+    (j.gratefulness && j.gratefulness.trim().length > 0)
+  );
+}
+
 function mergeJournals(cloud: JournalEntry[] = [], local: JournalEntry[] = []): JournalEntry[] {
   const map = new Map<string, JournalEntry>();
   for (const j of cloud) {
@@ -31,8 +38,20 @@ function mergeJournals(cloud: JournalEntry[] = [], local: JournalEntry[] = []): 
   for (const j of local) {
     const key = j.date || j.id;
     const existing = map.get(key);
-    if (!existing || (j.updatedAt ?? 0) > (existing.updatedAt ?? 0)) {
-      map.set(key, j);
+    if (!existing) {
+      if (hasJournalContent(j)) {
+        map.set(key, j);
+      }
+    } else {
+      const localHas = hasJournalContent(j);
+      const existingHas = hasJournalContent(existing);
+      if (localHas && !existingHas) {
+        map.set(key, j);
+      } else if (localHas && existingHas) {
+        if ((j.updatedAt ?? 0) > (existing.updatedAt ?? 0)) {
+          map.set(key, j);
+        }
+      }
     }
   }
   return Array.from(map.values()).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));

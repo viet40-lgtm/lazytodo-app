@@ -96,12 +96,20 @@ export function JournalModal({ visible, journals, onSaveJournals, onClose }: Jou
   useEffect(() => {
     entriesRef.current = journals;
     setEntries(journals);
-    if (active) {
-      const updated = journals.find((e) => e.id === active.id || e.date === active.date);
-      if (updated && updated.updatedAt > active.updatedAt) {
-        setActive({ ...updated });
+    setActive((curr) => {
+      const targetDate = curr ? curr.date : todayKey();
+      const match = journals.find((e) => e.date === targetDate);
+      if (match) {
+        const currHasContent = Boolean(
+          (curr?.thoughts && curr.thoughts.trim().length > 0) ||
+          (curr?.gratefulness && curr.gratefulness.trim().length > 0)
+        );
+        if (!currHasContent || match.updatedAt > (curr?.updatedAt ?? 0)) {
+          return { ...match };
+        }
       }
-    }
+      return curr;
+    });
   }, [journals]);
 
   useEffect(() => {
@@ -111,7 +119,8 @@ export function JournalModal({ visible, journals, onSaveJournals, onClose }: Jou
 
   function openToday(all: JournalEntry[]) {
     const k = todayKey();
-    const ex = all.find((e) => e.date === k);
+    const source = all && all.length > 0 ? all : journals;
+    const ex = source.find((e) => e.date === k);
     setActive(
       ex
         ? { ...ex }
@@ -121,7 +130,7 @@ export function JournalModal({ visible, journals, onSaveJournals, onClose }: Jou
             thoughts: '',
             gratefulness: '',
             createdAt: Date.now(),
-            updatedAt: Date.now(),
+            updatedAt: 0,
           }
     );
     const d = new Date();
@@ -173,7 +182,7 @@ export function JournalModal({ visible, journals, onSaveJournals, onClose }: Jou
 
   function openCalDay(day: number) {
     const k = mkKey(calY, calM, day);
-    const ex = entries.find((e) => e.date === k);
+    const ex = entriesRef.current.find((e) => e.date === k) || journals.find((e) => e.date === k);
     setActive(
       ex
         ? { ...ex }
@@ -183,7 +192,7 @@ export function JournalModal({ visible, journals, onSaveJournals, onClose }: Jou
             thoughts: '',
             gratefulness: '',
             createdAt: Date.now(),
-            updatedAt: Date.now(),
+            updatedAt: 0,
           }
     );
     setPv('edit');
