@@ -7,98 +7,221 @@ interface JournalEntry {
   id: string;
   date: string;
   thoughts: string;
-  emotions: string;
-  reflections: string;
   gratefulness: string;
   createdAt: number;
   updatedAt: number;
 }
 
-const SK = 'lazy_todo_journals_v1';
+const STORAGE_KEY = 'lazy_todo_journals_v1';
 
-function todayKey() {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2,'0');
-  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+function pad(n: number): string {
+  return String(n).padStart(2, '0');
 }
 
-function fmtDate(k: string) {
-  const [y,m,d] = k.split('-').map(Number);
-  return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+function todayKey(): string {
+  const d = new Date();
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+function mkKey(y: number, m: number, d: number): string {
+  return y + '-' + pad(m + 1) + '-' + pad(d);
+}
+
+const DOW = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const DOW_FULL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+function fmtDate(k: string): string {
+  const [y, m, d] = k.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const dayName = DOW_FULL[date.getDay()];
+  const yy = String(y).slice(-2);
+  return dayName + ', ' + m + '/' + d + '/' + yy;
+}
+
+function calDays(y: number, m: number): (number | null)[] {
+  const firstDow = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  return cells;
 }
 
 function loadAll(): JournalEntry[] {
-  try { if(typeof localStorage==='undefined') return []; const r=localStorage.getItem(SK); return r?JSON.parse(r):[]; }
-  catch { return []; }
+  try {
+    if (typeof localStorage === 'undefined') return [];
+    const r = localStorage.getItem(STORAGE_KEY);
+    return r ? JSON.parse(r) : [];
+  } catch {
+    return [];
+  }
 }
 
-function saveAll(es: JournalEntry[]) {
-  try { if(typeof localStorage!=='undefined') localStorage.setItem(SK,JSON.stringify(es)); } catch{}
+function saveAll(es: JournalEntry[]): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(es));
+    }
+  } catch {}
 }
 
-export interface JournalModalProps { visible: boolean; onClose: () => void; }
-type PV = 'list'|'edit';
+export interface JournalModalProps {
+  visible: boolean;
+  onClose: () => void;
+}
 
-export function JournalModal({visible,onClose}: JournalModalProps) {
-  const [entries,setEntries]=useState<JournalEntry[]>([]);
-  const [pv,setPv]=useState<PV>('edit');
-  const [active,setActive]=useState<JournalEntry|null>(null);
-  const [saved,setSaved]=useState(false);
-  const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
+type PageView = 'list' | 'edit';
 
-  useEffect(()=>{
-    if(!visible) return;
-    const all=loadAll(); setEntries(all); openToday(all);
-  },[visible]);
+export function JournalModal({ visible, onClose }: JournalModalProps) {
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [pv, setPv] = useState<PageView>('edit');
+  const [active, setActive] = useState<JournalEntry | null>(null);
+  const [saved, setSaved] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const now = new Date();
+  const [calY, setCalY] = useState(now.getFullYear());
+  const [calM, setCalM] = useState(now.getMonth());
+
+  useEffect(() => {
+    if (!visible) return;
+    const all = loadAll();
+    setEntries(all);
+    openToday(all);
+  }, [visible]);
 
   function openToday(all: JournalEntry[]) {
-    const k=todayKey();
-    const ex=all.find(e=>e.date===k);
-    setActive(ex?{...ex}:{id:'j_'+Date.now(),date:k,thoughts:'',emotions:'',reflections:'',gratefulness:'',createdAt:Date.now(),updatedAt:Date.now()});
+    const k = todayKey();
+    const ex = all.find((e) => e.date === k);
+    setActive(
+      ex
+        ? { ...ex }
+        : {
+            id: 'j_' + Date.now(),
+            date: k,
+            thoughts: '',
+            gratefulness: '',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          }
+    );
+    const d = new Date();
+    setCalY(d.getFullYear());
+    setCalM(d.getMonth());
     setPv('edit');
   }
 
   function persist(entry: JournalEntry) {
-    setEntries(prev=>{
-      const i=prev.findIndex(e=>e.id===entry.id);
-      const up=i>=0?prev.map((e,j)=>j===i?entry:e):[entry,...prev];
-      saveAll(up); return up;
+    setEntries((prev) => {
+      const i = prev.findIndex((e) => e.id === entry.id || e.date === entry.date);
+      const up =
+        i >= 0
+          ? prev.map((e, j) => (j === i ? entry : e))
+          : [entry, ...prev];
+      saveAll(up);
+      return up;
     });
     setSaved(true);
-    if(timer.current) clearTimeout(timer.current);
-    timer.current=setTimeout(()=>setSaved(false),1500);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setSaved(false), 1500);
   }
 
-  function onChange(field: keyof Pick<JournalEntry,'thoughts'|'emotions'|'reflections'|'gratefulness'>,val:string) {
-    if(!active) return;
-    const up={...active,[field]:val,updatedAt:Date.now()};
+  function onChg(
+    field: keyof Pick<JournalEntry, 'thoughts' | 'gratefulness'>,
+    val: string
+  ) {
+    if (!active) return;
+    const up = { ...active, [field]: val, updatedAt: Date.now() };
     setActive(up);
-    if(timer.current) clearTimeout(timer.current);
-    timer.current=setTimeout(()=>persist(up),700);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => persist(up), 700);
   }
 
-  function openEntry(e: JournalEntry){setActive({...e});setPv('edit');}
-
-  function delEntry(id: string){
-    setEntries(prev=>{const up=prev.filter(e=>e.id!==id);saveAll(up);return up;});
+  function openEntry(e: JournalEntry) {
+    setActive({ ...e });
+    const [y, m] = e.date.split('-').map(Number);
+    setCalY(y);
+    setCalM(m - 1);
+    setPv('edit');
   }
 
-  const isToday=active?.date===todayKey();
+  function delEntry(id: string) {
+    setEntries((prev) => {
+      const up = prev.filter((e) => e.id !== id);
+      saveAll(up);
+      return up;
+    });
+  }
+
+  function openCalDay(day: number) {
+    const k = mkKey(calY, calM, day);
+    const ex = entries.find((e) => e.date === k);
+    setActive(
+      ex
+        ? { ...ex }
+        : {
+            id: 'j_' + Date.now(),
+            date: k,
+            thoughts: '',
+            gratefulness: '',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          }
+    );
+    setPv('edit');
+  }
+
+  // Days with data (non-empty thoughts or gratefulness)
+  const entryDatesWithData = new Set<string>();
+  entries.forEach((e) => {
+    if (
+      (e.thoughts && e.thoughts.trim().length > 0) ||
+      (e.gratefulness && e.gratefulness.trim().length > 0)
+    ) {
+      entryDatesWithData.add(e.date);
+    }
+  });
+  if (
+    active &&
+    ((active.thoughts && active.thoughts.trim().length > 0) ||
+      (active.gratefulness && active.gratefulness.trim().length > 0))
+  ) {
+    entryDatesWithData.add(active.date);
+  }
+
+  const isToday = active?.date === todayKey();
+  const cells = calDays(calY, calM);
 
   return (
-    <Modal visible={visible} animationType='slide' presentationStyle='fullScreen' onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      onRequestClose={onClose}
+    >
       <SafeAreaView style={s.screen}>
+        {/* Header */}
         <View style={s.header}>
           <View style={s.hLeft}>
-            <Text style={s.title}>Journals</Text>
-            {saved&&<Text style={s.badge}>Saved</Text>}
+            <Text style={s.title}>📓 Journals</Text>
+            {saved && <Text style={s.badge}>✓ Saved</Text>}
           </View>
           <View style={s.hRight}>
-            <Pressable style={[s.tab,pv==='edit'&&s.tabOn]} onPress={()=>openToday(entries)}>
-              <Text style={[s.tabTxt,pv==='edit'&&s.tabTxtOn]}>Today</Text>
+            <Pressable
+              style={[s.tab, pv === 'edit' && s.tabOn]}
+              onPress={() => openToday(entries)}
+            >
+              <Text style={[s.tabTxt, pv === 'edit' && s.tabTxtOn]}>Today</Text>
             </Pressable>
-            <Pressable style={[s.tab,pv==='list'&&s.tabOn]} onPress={()=>setPv('list')}>
-              <Text style={[s.tabTxt,pv==='list'&&s.tabTxtOn]}>All</Text>
+            <Pressable
+              style={[s.tab, pv === 'list' && s.tabOn]}
+              onPress={() => setPv('list')}
+            >
+              <Text style={[s.tabTxt, pv === 'list' && s.tabTxtOn]}>All</Text>
             </Pressable>
             <Pressable style={s.closeBtn} onPress={onClose}>
               <Text style={s.closeX}>X</Text>
@@ -106,75 +229,400 @@ export function JournalModal({visible,onClose}: JournalModalProps) {
           </View>
         </View>
 
-        {pv==='edit'&&active?(
-          <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps='handled' showsVerticalScrollIndicator={false}>
-            <Text style={s.dateLabel}>{isToday?'Today  ':''}{fmtDate(active.date)}</Text>
-            <Sec label='Thoughts' ph='What is on your mind today?' val={active.thoughts} onCh={v=>onChange('thoughts',v)} />
-            <Sec label='Emotions' ph='How are you feeling right now?' val={active.emotions} onCh={v=>onChange('emotions',v)} />
-            <Sec label='Reflections' ph='What did you learn or notice today?' val={active.reflections} onCh={v=>onChange('reflections',v)} />
-            <Sec label='Gratefulness' ph='What are you grateful for today?' val={active.gratefulness} onCh={v=>onChange('gratefulness',v)} />
-          </ScrollView>
-        ):null}
+        {/* Edit View */}
+        {pv === 'edit' && active ? (
+          <ScrollView
+            contentContainerStyle={s.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={s.dateLabel}>
+              {isToday ? 'Today: ' + fmtDate(active.date) : fmtDate(active.date)}
+            </Text>
 
-        {pv==='list'?(
-          <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-            {entries.length===0?(
-              <View style={s.empty}><Text style={s.emptyTxt}>No entries yet. Start writing today!</Text></View>
-            ):(
-              entries.slice().sort((a,b)=>b.createdAt-a.createdAt).map(e=>(
-                <Pressable key={e.id} style={s.card} onPress={()=>openEntry(e)}>
-                  <View style={s.cardRow}>
-                    <Text style={s.cardDate}>{fmtDate(e.date)}</Text>
-                    <Pressable style={s.delBtn} onPress={()=>delEntry(e.id)} hitSlop={8}>
-                      <Text style={s.delTxt}>Delete</Text>
-                    </Pressable>
-                  </View>
-                  {e.thoughts?<Text style={s.prev} numberOfLines={2}>{e.thoughts}</Text>:null}
-                  {e.gratefulness?<Text style={s.prev} numberOfLines={1}>{e.gratefulness}</Text>:null}
+            <Sec
+              label="Thoughts"
+              ph="What is on your mind today?"
+              val={active.thoughts}
+              onCh={(v) => onChg('thoughts', v)}
+            />
+
+            <Sec
+              label="Gratefulness"
+              ph="What are you grateful for today?"
+              val={active.gratefulness}
+              onCh={(v) => onChg('gratefulness', v)}
+            />
+
+            {/* Monthly Calendar at bottom with '*' for days with data */}
+            <View style={s.cal}>
+              <View style={s.calHeader}>
+                <Pressable
+                  style={s.calNav}
+                  onPress={() => {
+                    if (calM === 0) {
+                      setCalM(11);
+                      setCalY((y) => y - 1);
+                    } else {
+                      setCalM((m) => m - 1);
+                    }
+                  }}
+                >
+                  <Text style={s.calNavTxt}>{'<'}</Text>
                 </Pressable>
-              ))
+                <Text style={s.calTitle}>
+                  {MONTH_NAMES[calM]} {calY}
+                </Text>
+                <Pressable
+                  style={s.calNav}
+                  onPress={() => {
+                    if (calM === 11) {
+                      setCalM(0);
+                      setCalY((y) => y + 1);
+                    } else {
+                      setCalM((m) => m + 1);
+                    }
+                  }}
+                >
+                  <Text style={s.calNavTxt}>{'>'}</Text>
+                </Pressable>
+              </View>
+
+              <View style={s.calGrid}>
+                {DOW.map((d) => (
+                  <Text key={d} style={s.calDow}>
+                    {d}
+                  </Text>
+                ))}
+                {cells.map((day, i) => {
+                  if (!day) return <View key={'empty_' + i} style={s.calCell} />;
+                  const k = mkKey(calY, calM, day);
+                  const hasData = entryDatesWithData.has(k);
+                  const isAct = k === active.date;
+                  const isTdy = k === todayKey();
+
+                  return (
+                    <Pressable
+                      key={k}
+                      style={[
+                        s.calCell,
+                        isAct && s.calCellAct,
+                        isTdy && !isAct && s.calCellToday,
+                      ]}
+                      onPress={() => openCalDay(day)}
+                    >
+                      <Text
+                        style={[
+                          s.calDay,
+                          isAct && s.calDayAct,
+                          isTdy && !isAct && s.calDayToday,
+                        ]}
+                      >
+                        {day}
+                      </Text>
+                      {hasData && (
+                        <Text style={[s.calStar, isAct && s.calStarAct]}>*</Text>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          </ScrollView>
+        ) : null}
+
+        {/* List View */}
+        {pv === 'list' ? (
+          <ScrollView
+            contentContainerStyle={s.content}
+            showsVerticalScrollIndicator={false}
+          >
+            {entries.length === 0 ? (
+              <View style={s.empty}>
+                <Text style={s.emptyTxt}>No entries yet. Start writing today!</Text>
+              </View>
+            ) : (
+              entries
+                .slice()
+                .sort((a, b) => b.createdAt - a.createdAt)
+                .map((e) => (
+                  <Pressable
+                    key={e.id}
+                    style={s.card}
+                    onPress={() => openEntry(e)}
+                  >
+                    <View style={s.cardRow}>
+                      <Text style={s.cardDate}>{fmtDate(e.date)}</Text>
+                      <Pressable
+                        style={s.delBtn}
+                        onPress={() => delEntry(e.id)}
+                        hitSlop={8}
+                      >
+                        <Text style={s.delTxt}>Delete</Text>
+                      </Pressable>
+                    </View>
+                    {e.thoughts ? (
+                      <Text style={s.prev} numberOfLines={2}>
+                        {e.thoughts}
+                      </Text>
+                    ) : null}
+                    {e.gratefulness ? (
+                      <Text style={s.prev} numberOfLines={1}>
+                        🙏 {e.gratefulness}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                ))
             )}
           </ScrollView>
-        ):null}
+        ) : null}
       </SafeAreaView>
     </Modal>
   );
 }
 
-interface SecP{label:string;ph:string;val:string;onCh:(v:string)=>void;}
-function Sec({label,ph,val,onCh}:SecP){
-  return(
+interface SecProps {
+  label: string;
+  ph: string;
+  val: string;
+  onCh: (v: string) => void;
+}
+
+function Sec({ label, ph, val, onCh }: SecProps) {
+  return (
     <View style={s.section}>
       <Text style={s.secLabel}>{label}</Text>
-      <TextInput style={s.input} placeholder={ph} placeholderTextColor={APP_COLORS.textSubtle} multiline value={val} onChangeText={onCh} textAlignVertical='top'/>
+      <TextInput
+        style={s.input}
+        placeholder={ph}
+        placeholderTextColor={APP_COLORS.textSubtle}
+        multiline
+        value={val}
+        onChangeText={onCh}
+        textAlignVertical="top"
+      />
     </View>
   );
 }
 
-const s=StyleSheet.create({
-  screen:{flex:1,backgroundColor:APP_COLORS.background},
-  header:{backgroundColor:APP_COLORS.headerBg,padding:10,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
-  hLeft:{flexDirection:'row',alignItems:'center',gap:SPACING.md,flex:1},
-  title:{fontSize:25,fontWeight:'800',color:'#fff'},
-  badge:{fontSize:25,color:APP_COLORS.headerAccent,fontWeight:'600'},
-  hRight:{flexDirection:'row',alignItems:'center',gap:SPACING.sm},
-  tab:{paddingHorizontal:12,paddingVertical:10,borderRadius:999,borderWidth:1.5,borderColor:'rgba(255,255,255,0.3)'},
-  tabOn:{backgroundColor:'rgba(134,239,172,0.2)',borderColor:APP_COLORS.headerAccent},
-  tabTxt:{fontSize:25,fontWeight:'600',color:'rgba(255,255,255,0.6)'},
-  tabTxtOn:{color:APP_COLORS.headerAccent,fontWeight:'800'},
-  closeBtn:{padding:10,borderRadius:999,borderWidth:2,borderColor:'#fff',alignItems:'center',justifyContent:'center'},
-  closeX:{fontSize:25,fontWeight:'800',color:'#fff'},
-  content:{padding:13,gap:SPACING.xl,paddingBottom:40},
-  dateLabel:{fontSize:25,fontWeight:'700',color:APP_COLORS.primary,marginBottom:SPACING.xs},
-  section:{gap:SPACING.sm},
-  secLabel:{fontSize:25,fontWeight:'800',color:APP_COLORS.text},
-  input:{backgroundColor:APP_COLORS.surface,borderRadius:14,borderWidth:1.5,borderColor:APP_COLORS.border,padding:SPACING.md,fontSize:25,color:APP_COLORS.text,minHeight:100},
-  empty:{alignItems:'center',paddingTop:60,gap:SPACING.md},
-  emptyTxt:{fontSize:25,color:APP_COLORS.textMuted,textAlign:'center',lineHeight:34},
-  card:{backgroundColor:APP_COLORS.surface,borderRadius:14,padding:SPACING.lg,gap:SPACING.sm,borderWidth:1,borderColor:APP_COLORS.border},
-  cardRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
-  cardDate:{fontSize:25,fontWeight:'700',color:APP_COLORS.primary,flex:1},
-  delBtn:{padding:6},
-  delTxt:{fontSize:25,color:APP_COLORS.delete,fontWeight:'700'},
-  prev:{fontSize:25,color:APP_COLORS.textMuted,lineHeight:30},
+const s = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: APP_COLORS.background,
+  },
+  header: {
+    backgroundColor: APP_COLORS.headerBg,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  hLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    flex: 1,
+  },
+  title: {
+    fontSize: 25,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  badge: {
+    fontSize: 25,
+    color: APP_COLORS.headerAccent,
+    fontWeight: '600',
+  },
+  hRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  tab: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: RADIUS.pill,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  tabOn: {
+    backgroundColor: 'rgba(134,239,172,0.2)',
+    borderColor: APP_COLORS.headerAccent,
+  },
+  tabTxt: {
+    fontSize: 25,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
+  },
+  tabTxtOn: {
+    color: APP_COLORS.headerAccent,
+    fontWeight: '800',
+  },
+  closeBtn: {
+    padding: 10,
+    borderRadius: RADIUS.pill,
+    borderWidth: 2,
+    borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeX: {
+    fontSize: 25,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  content: {
+    padding: 13,
+    gap: SPACING.xl,
+    paddingBottom: 40,
+  },
+  dateLabel: {
+    fontSize: 25,
+    fontWeight: '700',
+    color: APP_COLORS.primary,
+    marginBottom: SPACING.xs,
+  },
+  section: {
+    gap: SPACING.sm,
+  },
+  secLabel: {
+    fontSize: 25,
+    fontWeight: '800',
+    color: APP_COLORS.text,
+  },
+  input: {
+    backgroundColor: APP_COLORS.surface,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: APP_COLORS.border,
+    padding: SPACING.md,
+    fontSize: 25,
+    color: APP_COLORS.text,
+    minHeight: 100,
+  },
+  empty: {
+    alignItems: 'center',
+    paddingTop: 60,
+    gap: SPACING.md,
+  },
+  emptyTxt: {
+    fontSize: 25,
+    color: APP_COLORS.textMuted,
+    textAlign: 'center',
+    lineHeight: 34,
+  },
+  card: {
+    backgroundColor: APP_COLORS.surface,
+    borderRadius: 14,
+    padding: SPACING.lg,
+    gap: SPACING.sm,
+    borderWidth: 1,
+    borderColor: APP_COLORS.border,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardDate: {
+    fontSize: 25,
+    fontWeight: '700',
+    color: APP_COLORS.primary,
+    flex: 1,
+  },
+  delBtn: {
+    padding: 6,
+  },
+  delTxt: {
+    fontSize: 25,
+    color: APP_COLORS.delete,
+    fontWeight: '700',
+  },
+  prev: {
+    fontSize: 25,
+    color: APP_COLORS.textMuted,
+    lineHeight: 30,
+  },
+  cal: {
+    backgroundColor: APP_COLORS.surface,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: APP_COLORS.border,
+    padding: SPACING.md,
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+  },
+  calHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  calTitle: {
+    fontSize: 25,
+    fontWeight: '800',
+    color: APP_COLORS.text,
+  },
+  calNav: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: APP_COLORS.surfaceMuted,
+  },
+  calNavTxt: {
+    fontSize: 25,
+    fontWeight: '800',
+    color: APP_COLORS.primary,
+  },
+  calGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calDow: {
+    width: '14.28%',
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '700',
+    color: APP_COLORS.textMuted,
+    paddingVertical: 4,
+  },
+  calCell: {
+    width: '14.28%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    borderRadius: 8,
+    minHeight: 48,
+    position: 'relative',
+  },
+  calCellAct: {
+    backgroundColor: APP_COLORS.primary,
+  },
+  calCellToday: {
+    backgroundColor: APP_COLORS.accentSoft,
+  },
+  calDay: {
+    fontSize: 22,
+    color: APP_COLORS.text,
+    fontWeight: '600',
+  },
+  calDayAct: {
+    color: '#fff',
+    fontWeight: '800',
+  },
+  calDayToday: {
+    color: APP_COLORS.primary,
+    fontWeight: '700',
+  },
+  calStar: {
+    fontSize: 22,
+    color: APP_COLORS.delete,
+    fontWeight: '900',
+    lineHeight: 18,
+    position: 'absolute',
+    top: 2,
+    right: 6,
+  },
+  calStarAct: {
+    color: '#fff',
+  },
 });

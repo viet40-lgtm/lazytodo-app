@@ -17,11 +17,13 @@ function formatTotalTime(seconds: number) {
 }
 
 function todayLabel() {
-  return new Date().toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
+  const d = new Date();
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const day = days[d.getDay()];
+  const month = d.getMonth() + 1;
+  const date = d.getDate();
+  const year = String(d.getFullYear()).slice(-2);
+  return `Today: ${day}, ${month}/${date}/${year}`;
 }
 
 export function PomodoroTimer() {
