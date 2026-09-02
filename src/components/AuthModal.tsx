@@ -272,8 +272,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    width: 40,
-    height: 40,
+    padding: 10,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: APP_COLORS.headerMuted,

@@ -150,8 +150,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   closeBtn: {
-    width: 40,
-    height: 40,
+    padding: 10,
     borderRadius: RADIUS.pill,
     borderWidth: 2,
     borderColor: '#FFFFFF',

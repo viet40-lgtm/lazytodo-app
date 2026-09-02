@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   accountBtn: {
     backgroundColor: 'rgba(134, 239, 172, 0.15)',
     borderRadius: RADIUS.pill,
-    padding: 5,
+    padding: 10,
     minHeight: 32,
     minWidth: 96,
     alignItems: 'center',
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   updateBtn: {
     backgroundColor: 'rgba(134, 239, 172, 0.15)',
     borderRadius: RADIUS.pill,
-    padding: 5,
+    padding: 10,
     minHeight: 32,
     alignItems: 'center',
     justifyContent: 'center',

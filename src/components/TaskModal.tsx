@@ -417,8 +417,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    width: 40,
-    height: 40,
+    padding: 10,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#FFFFFF',
@@ -433,8 +432,7 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   headerSaveBtn: {
-    height: 40,
-    padding: 5,
+    padding: 10,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#FFFFFF',

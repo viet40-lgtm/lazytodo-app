@@ -215,8 +215,7 @@ const styles = StyleSheet.create({
     color: APP_COLORS.headerText,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
+    padding: 10,
     borderRadius: 16,
     borderWidth: 2,
     borderColor: APP_COLORS.headerMuted,

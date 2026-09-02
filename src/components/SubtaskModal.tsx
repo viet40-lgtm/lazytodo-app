@@ -391,8 +391,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   closeBtn: {
-    width: 40,
-    height: 40,
+    padding: 10,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#FFFFFF',
@@ -660,8 +659,7 @@ const styles = StyleSheet.create({
     borderTopColor: APP_COLORS.border,
   },
   headerSaveBtn: {
-    height: 40,
-    paddingHorizontal: 12,
+    padding: 10,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#FFFFFF',
