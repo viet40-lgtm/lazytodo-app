@@ -51,6 +51,7 @@ function SubtaskRowItem({
   const [isTiming, setIsTiming] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const secondsRef = useRef(0);
   const loggedMinutesRef = useRef(0);
   const onLogTimeRef = useRef(onLogTime);
   onLogTimeRef.current = onLogTime;
@@ -72,26 +73,27 @@ function SubtaskRowItem({
         intervalRef.current = null;
       }
       setIsTiming(false);
-      const unloggedSeconds = elapsedSeconds - loggedMinutesRef.current * 60;
+      const unloggedSeconds = secondsRef.current - loggedMinutesRef.current * 60;
       if (unloggedSeconds >= 30 || (loggedMinutesRef.current === 0 && unloggedSeconds > 0)) {
         onLogTimeRef.current(stIdRef.current, 1);
       }
       loggedMinutesRef.current = 0;
+      secondsRef.current = 0;
       setElapsedSeconds(0);
     } else {
       setIsTiming(true);
+      secondsRef.current = 0;
       setElapsedSeconds(0);
       loggedMinutesRef.current = 0;
       intervalRef.current = setInterval(() => {
-        setElapsedSeconds((s) => {
-          const next = s + 1;
-          if (next > 0 && next % 60 === 0) {
-            playLongBeep(1.0);
-            onLogTimeRef.current(stIdRef.current, 1);
-            loggedMinutesRef.current += 1;
-          }
-          return next;
-        });
+        secondsRef.current += 1;
+        const currentSecs = secondsRef.current;
+        setElapsedSeconds(currentSecs);
+        if (currentSecs > 0 && currentSecs % 60 === 0) {
+          playLongBeep(1.0);
+          onLogTimeRef.current(stIdRef.current, 1);
+          loggedMinutesRef.current += 1;
+        }
       }, 1000);
     }
   };
