@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../src/components/AppHeader';
 import { AuthModal } from '../src/components/AuthModal';
@@ -167,6 +167,42 @@ export default function HomeScreen() {
     [toggleTask],
   );
 
+  const [updating, setUpdating] = useState(false);
+
+  const handleUpdate = useCallback(async () => {
+    setUpdating(true);
+    try {
+      // 1. Push latest local changes and pull newest data from cloud
+      if (auth.userId) {
+        await forceSync();
+      }
+      // 2. Update service workers, clear web cache, and reload latest code
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        if ('serviceWorker' in navigator) {
+          try {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+              await registration.update();
+            }
+          } catch {
+            // best effort
+          }
+        }
+        if (typeof caches !== 'undefined') {
+          try {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((k) => caches.delete(k)));
+          } catch {
+            // best effort
+          }
+        }
+        window.location.reload();
+      }
+    } finally {
+      setUpdating(false);
+    }
+  }, [auth.userId, forceSync]);
+
   const confirmRemoveRepeat = useCallback(() => {
     if (removeConfirmId) deleteTask(removeConfirmId);
     setRemoveConfirmId(null);
@@ -182,7 +218,6 @@ export default function HomeScreen() {
     );
   }
 
-
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <AppHeader
@@ -190,10 +225,11 @@ export default function HomeScreen() {
           if (auth.userId) forceSync();
           setAuthOpen(true);
         }}
-        onUpdatePress={() => forceSync()}
+        onUpdatePress={handleUpdate}
         onAddPress={() => openAdd('today')}
         loggedIn={Boolean(auth.userId)}
         syncing={syncing}
+        updating={updating}
         showAccount={auth.configured}
       />
       <ScrollView

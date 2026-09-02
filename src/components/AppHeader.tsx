@@ -8,10 +8,11 @@ interface AppHeaderProps {
   onAddPress?: () => void;
   loggedIn?: boolean;
   syncing?: boolean;
+  updating?: boolean;
   showAccount?: boolean;
 }
 
-export function AppHeader({ onAccountPress, onUpdatePress, onAddPress, loggedIn = false, syncing = false, showAccount = true }: AppHeaderProps) {
+export function AppHeader({ onAccountPress, onUpdatePress, onAddPress, loggedIn = false, syncing = false, updating = false, showAccount = true }: AppHeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.row}>
@@ -32,9 +33,13 @@ export function AppHeader({ onAccountPress, onUpdatePress, onAddPress, loggedIn 
                 )}
               </Pressable>
             ) : null}
-            {showAccount && onUpdatePress ? (
+            {onUpdatePress ? (
               <Pressable style={styles.updateBtn} onPress={onUpdatePress} accessibilityRole="button">
-                <Text style={styles.updateText}>Update</Text>
+                {updating ? (
+                  <ActivityIndicator size="small" color={APP_COLORS.headerAccent} />
+                ) : (
+                  <Text style={styles.updateText}>Update</Text>
+                )}
               </Pressable>
             ) : null}
           </View>

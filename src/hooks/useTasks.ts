@@ -135,11 +135,15 @@ export function useTasks(userId: string | null = null) {
     };
   }, [userId]);
 
-  // Manual force sync — pull latest from cloud.
+  // Manual force sync — push latest local changes and pull from cloud.
   const forceSync = useCallback(async () => {
     if (!userId) return;
     setSyncing(true);
     try {
+      const snapshot = stateRef.current;
+      if (snapshot) {
+        await pushRemoteState(userId, snapshot).catch(() => {});
+      }
       const remote = await pullRemoteState(userId);
       if (remote) setState(remote);
     } catch {
