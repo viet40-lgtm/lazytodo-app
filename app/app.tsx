@@ -12,6 +12,7 @@ import { TaskList } from '../src/components/TaskList';
 import { PomodoroTimer } from '../src/components/PomodoroTimer';
 import { TaskModal } from '../src/components/TaskModal';
 import { SubtaskModal } from '../src/components/SubtaskModal';
+import { JournalModal } from '../src/components/JournalModal';
 import { APP_COLORS, FAB_SIZE, RADIUS, SCREEN_PADDING, SPACING } from '../src/constants';
 import { getRandomQuote } from '../src/data/quotes';
 import { useLocalSearchParams } from 'expo-router';
@@ -28,6 +29,7 @@ export default function HomeScreen() {
   const [authOpen, setAuthOpen] = useState(false);
   const [completedOpen, setCompletedOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [journalOpen, setJournalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [defaultSection, setDefaultSection] = useState<TaskSection>('today');
   const [manageSubtasksId, setManageSubtasksId] = useState<string | null>(null);
@@ -298,6 +300,9 @@ export default function HomeScreen() {
           onManageSubtasks={setManageSubtasksId}
           emptyText="Long-term tasks. No rush."
         />
+        <Pressable style={styles.journalsBtn} onPress={() => setJournalOpen(true)}>
+          <Text style={styles.journalsBtnText}>📓  Journals</Text>
+        </Pressable>
         <Quote text={quote} />
         <Pressable style={styles.completedBtn} onPress={() => setCompletedOpen(true)}>
           <Text style={styles.completedBtnText}>View Completed</Text>
@@ -344,6 +349,10 @@ export default function HomeScreen() {
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
+      <JournalModal
+        visible={journalOpen}
+        onClose={() => setJournalOpen(false)}
+      />
       <ConfirmModal
         visible={removeConfirmId !== null}
         title="Remove repeat task?"
@@ -375,6 +384,19 @@ const styles = StyleSheet.create({
     gap: 24,
     width: '100%',
     overflow: 'hidden',
+  },
+  journalsBtn: {
+    backgroundColor: '#1e3a2e',
+    borderRadius: RADIUS.md,
+    padding: 14,
+    alignItems: 'center',
+    borderWidth: 0,
+  },
+  journalsBtnText: {
+    fontSize: 25,
+    fontWeight: '800',
+    color: '#86efac',
+    letterSpacing: 0.3,
   },
   completedBtn: {
     backgroundColor: APP_COLORS.primary,
