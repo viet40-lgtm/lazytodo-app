@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -10,8 +10,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { APP_COLORS, RADIUS, SCREEN_PADDING, SPACING } from '../constants';
+import { APP_COLORS, RADIUS, SCREEN_PADDING, SPACING, softShadow } from '../constants';
 import type { AppState } from '../types';
+
 interface SettingsModalProps {
   visible: boolean;
   onClose: () => void;
@@ -19,11 +20,62 @@ interface SettingsModalProps {
 
 export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   const [status, setStatus] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [installGuide, setInstallGuide] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+    const handler = (e: any) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   const showStatus = (msg: string) => {
     setStatus(msg);
     setTimeout(() => setStatus(null), 3500);
+  };
+
+  const handleInstallApp = async () => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+      showStatus('App is already installed on your device!');
+      return;
+    }
+
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      Boolean((window.navigator as any).standalone);
+
+    if (isStandalone) {
+      showStatus('✅ LazyToDo is already installed and running as an app!');
+      setInstallGuide(null);
+      return;
+    }
+
+    if (installPrompt) {
+      try {
+        installPrompt.prompt();
+        const choice = await installPrompt.userChoice;
+        if (choice.outcome === 'accepted') {
+          showStatus('🎉 Installing LazyToDo on your device...');
+          setInstallPrompt(null);
+          setInstallGuide(null);
+        }
+      } catch {
+        // fallback
+      }
+    } else {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      if (isIOS) {
+        setInstallGuide('📱 On iOS (iPhone/iPad): Tap the Share button (⎋ / ⬆️) at the bottom of Safari, then tap "Add to Home Screen" (➕).');
+      } else {
+        setInstallGuide('📱 On Android: Tap the browser menu (⋮) in Chrome, then select "Install app" or "Add to Home screen".');
+      }
+    }
   };
 
   return (
@@ -49,6 +101,19 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
               <Text style={styles.statusText}>{status}</Text>
             </View>
           ) : null}
+
+          {/* Install App Button */}
+          <View style={styles.section}>
+            <Pressable style={styles.installBtn} onPress={handleInstallApp}>
+              <Text style={styles.installBtnText}>📲 Install App</Text>
+            </Pressable>
+
+            {installGuide ? (
+              <View style={styles.guideBox}>
+                <Text style={styles.guideText}>{installGuide}</Text>
+              </View>
+            ) : null}
+          </View>
 
           {/* Info */}
           <View style={styles.infoBox}>
@@ -169,5 +234,29 @@ const styles = StyleSheet.create({
     fontSize: 30,
     color: '#166534',
     lineHeight: 20,
+  },
+  installBtn: {
+    backgroundColor: APP_COLORS.primary,
+    borderRadius: RADIUS.md,
+    padding: SPACING.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  installBtnText: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  guideBox: {
+    backgroundColor: '#fffbeb',
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  guideText: {
+    fontSize: 30,
+    color: '#92400e',
+    lineHeight: 22,
   },
 });
