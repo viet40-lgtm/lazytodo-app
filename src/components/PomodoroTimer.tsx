@@ -3,6 +3,7 @@ import { AppState, AppStateStatus, Platform, Pressable, StyleSheet, Text, TextIn
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { APP_COLORS, RADIUS, SPACING, softShadow } from '../constants';
 import { setSystemAlarm } from '../services/pomodoroNotifications';
+import { playLongBeep } from '../utils/sound';
 
 const DEFAULT_MINUTES = 5;
 
@@ -23,34 +24,6 @@ function todayLabel() {
   });
 }
 
-let globalAudioCtx: any = null;
-
-function beep() {
-  if (Platform.OS !== 'web') return;
-  try {
-    // @ts-ignore web audio is unavailable in native builds
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!globalAudioCtx) globalAudioCtx = new AudioCtx();
-    const oscillator = globalAudioCtx.createOscillator();
-    const gain = globalAudioCtx.createGain();
-    oscillator.connect(gain);
-    gain.connect(globalAudioCtx.destination);
-    oscillator.frequency.value = 880;
-    gain.gain.value = 0.08;
-    oscillator.start();
-    oscillator.stop(globalAudioCtx.currentTime + 0.5);
-  } catch {
-    // Audio is best effort on web.
-  }
-}
-
-async function beepCycle(count: number) {
-  for (let index = 0; index < count; index += 1) {
-    beep();
-    await new Promise((resolve) => setTimeout(resolve, 650));
-  }
-}
-
 export function PomodoroTimer() {
   const [minutes, setMinutes] = useState(String(DEFAULT_MINUTES));
   const [seconds, setSeconds] = useState(DEFAULT_MINUTES * 60);
@@ -62,7 +35,13 @@ export function PomodoroTimer() {
     if (!running || seconds <= 0) return;
     const timer = setTimeout(() => {
       setSeconds((value) => value - 1);
-      setGrandTotalSeconds((value) => value + 1);
+      setGrandTotalSeconds((value) => {
+        const next = value + 1;
+        if (next > 0 && next % 60 === 0) {
+          playLongBeep(1.0);
+        }
+        return next;
+      });
     }, 1000);
     return () => clearTimeout(timer);
   }, [running, seconds]);
@@ -74,7 +53,7 @@ export function PomodoroTimer() {
       const nextCycleStartTime = Date.now();
       setSeconds(cycleSeconds);
       setCycleStartTime(nextCycleStartTime);
-      void beepCycle(cycleMinutes);
+      playLongBeep(1.0);
       void AsyncStorage.setItem(
         '@lazy_todo_countdown_state',
         JSON.stringify({ running: true, startTime: nextCycleStartTime, seconds: cycleSeconds, grandTotalSeconds }),
