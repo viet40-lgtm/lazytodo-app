@@ -1,4 +1,4 @@
-import type { AppState, Recurring, SubTask, Task, TaskSection, TimeLogEntry } from '../types';
+import type { AppState, JournalEntry, Recurring, SubTask, Task, TaskSection, TimeLogEntry } from '../types';
 
 function parseTimestamp(value: unknown): number | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -124,15 +124,33 @@ function normalizeTask(raw: unknown): Task | null {
   };
 }
 
+function normalizeJournal(raw: unknown): JournalEntry | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const j = raw as Record<string, unknown>;
+  if (typeof j.id !== 'string' || typeof j.date !== 'string') return null;
+  return {
+    id: j.id,
+    date: j.date,
+    thoughts: typeof j.thoughts === 'string' ? j.thoughts : '',
+    gratefulness: typeof j.gratefulness === 'string' ? j.gratefulness : '',
+    createdAt: parseTimestamp(j.createdAt) ?? Date.now(),
+    updatedAt: parseTimestamp(j.updatedAt) ?? Date.now(),
+  };
+}
+
 export function normalizeState(raw: unknown): AppState {
   if (!raw || typeof raw !== 'object') return { tasks: [], savedAt: Date.now() };
   const data = raw as Record<string, unknown>;
   const tasks = Array.isArray(data.tasks)
     ? data.tasks.map(normalizeTask).filter((task): task is Task => task !== null)
     : [];
+  const journals = Array.isArray(data.journals)
+    ? data.journals.map(normalizeJournal).filter((j): j is JournalEntry => j !== null)
+    : undefined;
 
   return {
     tasks,
+    ...(journals ? { journals } : {}),
     ...(typeof data.lastCelebrationDate === 'string'
       ? { lastCelebrationDate: data.lastCelebrationDate }
       : {}),

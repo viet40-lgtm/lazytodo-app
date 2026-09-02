@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AppState, Task } from '../types';
+import type { AppState, JournalEntry, Task } from '../types';
 import { pushRemoteState, pullRemoteState, subscribeToRemoteState } from '../services/cloud';
 import { syncReminders } from '../services/reminders';
 import { isQueuedSuccessor } from '../utils/series';
@@ -10,6 +10,33 @@ import {
   spawnNextOccurrence,
   withRecurringSeries,
 } from '../utils/taskSeries';
+
+const JOURNAL_STORAGE_KEY = 'lazy_todo_journals_v1';
+
+function getLocalJournals(): JournalEntry[] {
+  try {
+    if (typeof localStorage === 'undefined') return [];
+    const raw = localStorage.getItem(JOURNAL_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function mergeJournals(cloud: JournalEntry[] = [], local: JournalEntry[] = []): JournalEntry[] {
+  const map = new Map<string, JournalEntry>();
+  for (const j of cloud) {
+    map.set(j.date || j.id, j);
+  }
+  for (const j of local) {
+    const key = j.date || j.id;
+    const existing = map.get(key);
+    if (!existing || (j.updatedAt ?? 0) > (existing.updatedAt ?? 0)) {
+      map.set(key, j);
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+}
 
 function sortTasks(tasks: Task[]): Task[] {
   return [...tasks].sort((a, b) => {
@@ -52,7 +79,8 @@ export function useTasks(userId: string | null = null) {
     setHydrated(false);
 
     if (!userId) {
-      setState({ tasks: [], savedAt: Date.now() });
+      const localJ = getLocalJournals();
+      setState({ tasks: [], journals: localJ, savedAt: Date.now() });
       setHydrated(true);
     } else {
       // Logged-in mode: load from cloud.
@@ -60,7 +88,18 @@ export function useTasks(userId: string | null = null) {
       pullRemoteState(userId)
         .then((remote) => {
           if (!active) return;
-          setState(remote ?? { tasks: [], savedAt: Date.now() });
+          const localJ = getLocalJournals();
+          const mergedJ = mergeJournals(remote?.journals ?? [], localJ);
+          const nextState: AppState = {
+            ...(remote ?? { tasks: [], savedAt: Date.now() }),
+            journals: mergedJ,
+          };
+          setState(nextState);
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(mergedJ));
+            }
+          } catch {}
           setHydrated(true);
           setSyncing(false);
         })
@@ -68,9 +107,8 @@ export function useTasks(userId: string | null = null) {
       // on the next push. Keep hydrated=false so a retry/reload is required.
           .catch(() => {
           if (!active) return;
-          // Stay unhydrated so we don't push empty state to cloud.
-          // The loading spinner stays visible; user can pull-to-refresh.
-          setState({ tasks: [], savedAt: 0 });
+          const localJ = getLocalJournals();
+          setState({ tasks: [], journals: localJ, savedAt: 0 });
           setHydrated(true);
           setSyncing(false);
         });
@@ -126,6 +164,11 @@ export function useTasks(userId: string | null = null) {
         if (prev && prev.savedAt > remote.savedAt) {
           return prev;
         }
+        if (remote.journals && typeof localStorage !== 'undefined') {
+          try {
+            localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(remote.journals));
+          } catch {}
+        }
         return remote;
       });
     });
@@ -145,7 +188,16 @@ export function useTasks(userId: string | null = null) {
         await pushRemoteState(userId, snapshot).catch(() => {});
       }
       const remote = await pullRemoteState(userId);
-      if (remote) setState(remote);
+      if (remote) {
+        const localJ = getLocalJournals();
+        const mergedJ = mergeJournals(remote.journals ?? [], localJ);
+        setState({ ...remote, journals: mergedJ });
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(mergedJ));
+          }
+        } catch {}
+      }
     } catch {
       // Sync errors are non-fatal.
     } finally {
@@ -377,6 +429,23 @@ export function useTasks(userId: string | null = null) {
     return liveTasks.length > 0 && liveTasks.every((t) => t.completed);
   }, [tasks]);
   const celebratedToday = state?.lastCelebrationDate === new Date().toISOString().slice(0, 10);
+  const journals = useMemo(() => state?.journals ?? [], [state?.journals]);
+
+  const saveJournals = useCallback((updatedJournals: JournalEntry[]) => {
+    setState((prev) => {
+      const base = prev ?? { tasks: [], savedAt: 0 };
+      return {
+        ...base,
+        journals: updatedJournals,
+        savedAt: Date.now(),
+      };
+    });
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(updatedJournals));
+      }
+    } catch {}
+  }, []);
 
   return {
     hydrated,
@@ -384,6 +453,8 @@ export function useTasks(userId: string | null = null) {
     tasks,
     allDone,
     celebratedToday,
+    journals,
+    saveJournals,
     addTask,
     updateTask,
     logTime,

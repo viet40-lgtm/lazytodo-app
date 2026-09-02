@@ -46,8 +46,18 @@ export interface Task {
   timeLogs?: TimeLogEntry[];
 }
 
+export interface JournalEntry {
+  id: string;
+  date: string; // 'YYYY-MM-DD'
+  thoughts: string;
+  gratefulness: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface AppState {
   tasks: Task[];
+  journals?: JournalEntry[];
   lastCelebrationDate?: string;
   savedAt: number;
 }

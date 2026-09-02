@@ -71,13 +71,15 @@ function saveAll(es: JournalEntry[]): void {
 
 export interface JournalModalProps {
   visible: boolean;
+  journals: JournalEntry[];
+  onSaveJournals: (journals: JournalEntry[]) => void;
   onClose: () => void;
 }
 
 type PageView = 'list' | 'edit';
 
-export function JournalModal({ visible, onClose }: JournalModalProps) {
-  const [entries, setEntries] = useState<JournalEntry[]>([]);
+export function JournalModal({ visible, journals, onSaveJournals, onClose }: JournalModalProps) {
+  const [entries, setEntries] = useState<JournalEntry[]>(journals);
   const [pv, setPv] = useState<PageView>('edit');
   const [active, setActive] = useState<JournalEntry | null>(null);
   const [saved, setSaved] = useState(false);
@@ -87,11 +89,20 @@ export function JournalModal({ visible, onClose }: JournalModalProps) {
   const [calY, setCalY] = useState(now.getFullYear());
   const [calM, setCalM] = useState(now.getMonth());
 
+  // Keep local entries in sync whenever journals from cloud/props change
+  useEffect(() => {
+    setEntries(journals);
+    if (active) {
+      const updated = journals.find((e) => e.id === active.id || e.date === active.date);
+      if (updated && updated.updatedAt > active.updatedAt) {
+        setActive({ ...updated });
+      }
+    }
+  }, [journals]);
+
   useEffect(() => {
     if (!visible) return;
-    const all = loadAll();
-    setEntries(all);
-    openToday(all);
+    openToday(journals);
   }, [visible]);
 
   function openToday(all: JournalEntry[]) {
@@ -122,6 +133,7 @@ export function JournalModal({ visible, onClose }: JournalModalProps) {
         i >= 0
           ? prev.map((e, j) => (j === i ? entry : e))
           : [entry, ...prev];
+      onSaveJournals(up);
       saveAll(up);
       return up;
     });
@@ -152,6 +164,7 @@ export function JournalModal({ visible, onClose }: JournalModalProps) {
   function delEntry(id: string) {
     setEntries((prev) => {
       const up = prev.filter((e) => e.id !== id);
+      onSaveJournals(up);
       saveAll(up);
       return up;
     });

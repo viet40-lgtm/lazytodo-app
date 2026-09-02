@@ -51,6 +51,8 @@ export default function HomeScreen() {
     tasks,
     allDone,
     celebratedToday,
+    journals,
+    saveJournals,
     addTask,
     updateTask,
     logTime,
@@ -351,6 +353,8 @@ export default function HomeScreen() {
       />
       <JournalModal
         visible={journalOpen}
+        journals={journals}
+        onSaveJournals={saveJournals}
         onClose={() => setJournalOpen(false)}
       />
       <ConfirmModal
