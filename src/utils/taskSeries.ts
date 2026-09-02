@@ -29,6 +29,7 @@ export function spawnNextOccurrence(task: Task): Task {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     spentMinutes: 0,
+    timeLogs: task.timeLogs ?? [],
     showAfter: nextPeriodStart(primary),
     reminder: task.reminder ? advanceReminder(task.reminder, primary) : undefined,
   };
@@ -56,8 +57,12 @@ export function applyLoggedTime(task: Task, minutes: number): Task {
 }
 
 export function withRecurringSeries(
-  task: Omit<Task, 'id' | 'createdAt' | 'completed' | 'spentMinutes'>,
+  task: Partial<Task>,
 ): Partial<Task> {
   if (!hasRecurring(task)) return {};
-  return { seriesId: createSeriesId(), seriesTotalMinutes: 0, timeLogs: [] };
+  return {
+    seriesId: task.seriesId ?? createSeriesId(),
+    seriesTotalMinutes: task.seriesTotalMinutes ?? task.spentMinutes ?? 0,
+    timeLogs: task.timeLogs ?? [],
+  };
 }
