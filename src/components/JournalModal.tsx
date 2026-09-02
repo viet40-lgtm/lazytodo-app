@@ -89,8 +89,12 @@ export function JournalModal({ visible, journals, onSaveJournals, onClose }: Jou
   const [calY, setCalY] = useState(now.getFullYear());
   const [calM, setCalM] = useState(now.getMonth());
 
+  const entriesRef = useRef<JournalEntry[]>(journals);
+  entriesRef.current = entries;
+
   // Keep local entries in sync whenever journals from cloud/props change
   useEffect(() => {
+    entriesRef.current = journals;
     setEntries(journals);
     if (active) {
       const updated = journals.find((e) => e.id === active.id || e.date === active.date);
@@ -127,16 +131,14 @@ export function JournalModal({ visible, journals, onSaveJournals, onClose }: Jou
   }
 
   function persist(entry: JournalEntry) {
-    setEntries((prev) => {
-      const i = prev.findIndex((e) => e.id === entry.id || e.date === entry.date);
-      const up =
-        i >= 0
-          ? prev.map((e, j) => (j === i ? entry : e))
-          : [entry, ...prev];
-      onSaveJournals(up);
-      saveAll(up);
-      return up;
-    });
+    const current = entriesRef.current;
+    const i = current.findIndex((e) => e.id === entry.id || e.date === entry.date);
+    const up = i >= 0 ? current.map((e, j) => (j === i ? entry : e)) : [entry, ...current];
+    entriesRef.current = up;
+    setEntries(up);
+    onSaveJournals(up);
+    saveAll(up);
+
     setSaved(true);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setSaved(false), 1500);
@@ -162,12 +164,11 @@ export function JournalModal({ visible, journals, onSaveJournals, onClose }: Jou
   }
 
   function delEntry(id: string) {
-    setEntries((prev) => {
-      const up = prev.filter((e) => e.id !== id);
-      onSaveJournals(up);
-      saveAll(up);
-      return up;
-    });
+    const up = entriesRef.current.filter((e) => e.id !== id);
+    entriesRef.current = up;
+    setEntries(up);
+    onSaveJournals(up);
+    saveAll(up);
   }
 
   function openCalDay(day: number) {
