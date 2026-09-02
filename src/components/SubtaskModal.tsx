@@ -18,6 +18,7 @@ import { normalizeRecurring } from '../utils/recurringList';
 import { recurringLabelShort } from '../utils/series';
 import { formatDuration } from '../utils/time';
 import { minutesForTimeLogs } from '../utils/periodTotals';
+import { playLongBeep } from '../utils/sound';
 
 interface SubtaskModalProps {
   visible: boolean;
@@ -25,6 +26,162 @@ interface SubtaskModalProps {
   onSave: (taskId: string, subtasks: SubTask[]) => void;
   onLogTime?: (taskId: string, mins: number) => void;
   onClose: () => void;
+}
+
+interface SubtaskRowItemProps {
+  st: SubTask;
+  taskSection: Task['section'];
+  onLogTime: (id: string, mins: number) => void;
+  onMoveUp: (id: string) => void;
+  onRemove: (id: string) => void;
+  onToggle: (id: string) => void;
+  onEditName: (id: string, text: string) => void;
+}
+
+function SubtaskRowItem({
+  st,
+  taskSection,
+  onLogTime,
+  onMoveUp,
+  onRemove,
+  onToggle,
+  onEditName,
+}: SubtaskRowItemProps) {
+  const theme = getSectionTheme(taskSection);
+  const [isTiming, setIsTiming] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loggedMinutesRef = useRef(0);
+  const onLogTimeRef = useRef(onLogTime);
+  onLogTimeRef.current = onLogTime;
+  const stIdRef = useRef(st.id);
+  stIdRef.current = st.id;
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  const handleToggleTimer = () => {
+    if (isTiming) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      setIsTiming(false);
+      const unloggedSeconds = elapsedSeconds - loggedMinutesRef.current * 60;
+      if (unloggedSeconds >= 30 || (loggedMinutesRef.current === 0 && unloggedSeconds > 0)) {
+        onLogTimeRef.current(stIdRef.current, 1);
+      }
+      loggedMinutesRef.current = 0;
+      setElapsedSeconds(0);
+    } else {
+      setIsTiming(true);
+      setElapsedSeconds(0);
+      loggedMinutesRef.current = 0;
+      intervalRef.current = setInterval(() => {
+        setElapsedSeconds((s) => {
+          const next = s + 1;
+          if (next > 0 && next % 60 === 0) {
+            playLongBeep(1.0);
+            onLogTimeRef.current(stIdRef.current, 1);
+            loggedMinutesRef.current += 1;
+          }
+          return next;
+        });
+      }, 1000);
+    }
+  };
+
+  const formatTimerDisplay = (sec: number) => {
+    const mm = Math.floor(sec / 60);
+    const ss = sec % 60;
+    return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  };
+
+  return (
+    <View style={[styles.subtaskRow, { borderLeftColor: theme.accent }]}>
+      {/* 1st line: +5, Timer, time, arrow up, x */}
+      <View style={styles.row1}>
+        <View style={styles.row1Left}>
+          <View style={styles.timeBtnGroup}>
+            <Pressable
+              style={styles.timeBtn}
+              onPress={() => onLogTime(st.id, 5)}
+              hitSlop={4}
+            >
+              <Text style={styles.timeBtnText}>+5m</Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.timeBtn,
+                isTiming && { backgroundColor: APP_COLORS.primary },
+              ]}
+              onPress={handleToggleTimer}
+              hitSlop={4}
+            >
+              <Text
+                style={[
+                  styles.timeBtnText,
+                  isTiming && { color: '#FFFFFF' },
+                ]}
+              >
+                {isTiming ? formatTimerDisplay(elapsedSeconds) : 'Timer'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.row1Right}>
+          <View style={styles.dailyStatChip}>
+            <Text style={styles.dailyStatLabel}>D:</Text>
+            <Text style={styles.dailyStatValue}>
+              {formatDuration(minutesForTimeLogs(st.timeLogs, 'daily'))}
+            </Text>
+          </View>
+          <View style={styles.corner}>
+            <View style={styles.sortArrows}>
+              <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => onMoveUp(st.id)}>
+                <Text style={styles.arrowText}>↑</Text>
+              </Pressable>
+            </View>
+            <Pressable style={styles.subtaskDelete} onPress={() => onRemove(st.id)} hitSlop={8}>
+              <Text style={styles.subtaskDeleteText}>X</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      {/* 2nd line: check off circle, name */}
+      <View style={styles.row2}>
+        <Pressable
+          style={[styles.subtaskCheckbox, st.completed && styles.subtaskCheckboxDone]}
+          onPress={() => onToggle(st.id)}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: st.completed }}
+        >
+          {st.completed ? <Text style={styles.subtaskCheckmark}>✓</Text> : null}
+        </Pressable>
+
+        <View style={styles.subtaskNameCol}>
+          <TextInput
+            style={[
+              styles.subtaskName,
+              styles.subtaskNameInput,
+              st.completed && styles.subtaskNameDone,
+            ]}
+            value={st.name}
+            onChangeText={(text) => onEditName(st.id, text)}
+            underlineColorAndroid="transparent"
+            multiline={false}
+          />
+        </View>
+      </View>
+    </View>
+  );
 }
 
 export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: SubtaskModalProps) {
@@ -162,80 +319,18 @@ export function SubtaskModal({ visible, task, onSave, onLogTime, onClose }: Subt
           </View>
           <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <View style={styles.subtaskList}>
-              {subtasks.map((st) => {
-                const theme = getSectionTheme(task.section);
-                return (
-                  <View key={st.id} style={[styles.subtaskRow, { borderLeftColor: theme.accent }]}>
-                    {/* 1st line: +5, +30m, time, arrow up, x */}
-                    <View style={styles.row1}>
-                      <View style={styles.row1Left}>
-                        <View style={styles.timeBtnGroup}>
-                          <Pressable
-                            style={styles.timeBtn}
-                            onPress={() => handleLogTime(st.id, 5)}
-                            hitSlop={4}
-                          >
-                            <Text style={styles.timeBtnText}>+5m</Text>
-                          </Pressable>
-                          <Pressable
-                            style={styles.timeBtn}
-                            onPress={() => handleLogTime(st.id, 30)}
-                            hitSlop={4}
-                          >
-                            <Text style={styles.timeBtnText}>+30m</Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                      
-                      <View style={styles.row1Right}>
-                        <View style={styles.dailyStatChip}>
-                          <Text style={styles.dailyStatLabel}>D:</Text>
-                          <Text style={styles.dailyStatValue}>
-                            {formatDuration(minutesForTimeLogs(st.timeLogs, 'daily'))}
-                          </Text>
-                        </View>
-                        <View style={styles.corner}>
-                          <View style={styles.sortArrows}>
-                            <Pressable hitSlop={8} style={styles.sortArrowBtn} onPress={() => handleMoveUp(st.id)}>
-                              <Text style={styles.arrowText}>↑</Text>
-                            </Pressable>
-                          </View>
-                          <Pressable style={styles.subtaskDelete} onPress={() => handleRemove(st.id)} hitSlop={8}>
-                            <Text style={styles.subtaskDeleteText}>X</Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    </View>
-
-                    {/* 2nd line: check off circle, name */}
-                    <View style={styles.row2}>
-                      <Pressable
-                        style={[styles.subtaskCheckbox, st.completed && styles.subtaskCheckboxDone]}
-                        onPress={() => handleToggle(st.id)}
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: st.completed }}
-                      >
-                        {st.completed ? <Text style={styles.subtaskCheckmark}>✓</Text> : null}
-                      </Pressable>
-
-                      <View style={styles.subtaskNameCol}>
-                        <TextInput
-                          style={[
-                            styles.subtaskName, 
-                            styles.subtaskNameInput, 
-                            st.completed && styles.subtaskNameDone
-                          ]}
-                          value={st.name}
-                          onChangeText={(text) => handleEditName(st.id, text)}
-                          underlineColorAndroid="transparent"
-                          multiline={false}
-                        />
-                      </View>
-                    </View>
-
-                  </View>
-                );
-              })}
+              {subtasks.map((st) => (
+                <SubtaskRowItem
+                  key={st.id}
+                  st={st}
+                  taskSection={task.section}
+                  onLogTime={handleLogTime}
+                  onMoveUp={handleMoveUp}
+                  onRemove={handleRemove}
+                  onToggle={handleToggle}
+                  onEditName={handleEditName}
+                />
+              ))}
             </View>
             <View style={styles.inputRow}>
               <TextInput

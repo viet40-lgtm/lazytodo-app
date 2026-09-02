@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -16,6 +16,7 @@ import { hasRecurring, normalizeRecurring } from '../utils/recurringList';
 import { recurringLabelShort } from '../utils/series';
 
 import { formatDuration } from '../utils/time';
+import { playLongBeep } from '../utils/sound';
 
 interface TaskItemProps {
   task: Task;
@@ -107,6 +108,60 @@ function TaskRow({
   const done = task.completed;
   const hasMeta = Boolean(task.reminder);
 
+  const [isTiming, setIsTiming] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loggedMinutesRef = useRef(0);
+  const onLogTimeRef = useRef(onLogTime);
+  onLogTimeRef.current = onLogTime;
+  const taskIdRef = useRef(task.id);
+  taskIdRef.current = task.id;
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  const handleToggleTimer = () => {
+    if (isTiming) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      setIsTiming(false);
+      const unloggedSeconds = elapsedSeconds - loggedMinutesRef.current * 60;
+      if (unloggedSeconds >= 30 || (loggedMinutesRef.current === 0 && unloggedSeconds > 0)) {
+        onLogTimeRef.current(taskIdRef.current, 1);
+      }
+      loggedMinutesRef.current = 0;
+      setElapsedSeconds(0);
+    } else {
+      setIsTiming(true);
+      setElapsedSeconds(0);
+      loggedMinutesRef.current = 0;
+      intervalRef.current = setInterval(() => {
+        setElapsedSeconds((s) => {
+          const next = s + 1;
+          if (next > 0 && next % 60 === 0) {
+            playLongBeep(1.0);
+            onLogTimeRef.current(taskIdRef.current, 1);
+            loggedMinutesRef.current += 1;
+          }
+          return next;
+        });
+      }, 1000);
+    }
+  };
+
+  const formatTimerDisplay = (sec: number) => {
+    const mm = Math.floor(sec / 60);
+    const ss = sec % 60;
+    return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  };
+
   // Center timer source:
   // - Persistent habits → sum of ALL timeLogs entries (same source as D/W/M/Y stats,
   //   just without a date filter). This guarantees Y: can never exceed the center total.
@@ -148,11 +203,23 @@ function TaskRow({
                 <Text style={[styles.timeBtnText, { color: accentColor }]}>+5m</Text>
               </Pressable>
               <Pressable
-                style={[styles.timeBtn, { backgroundColor: accentSoft }]}
-                onPress={() => onLogTime(task.id, 30)}
+                style={[
+                  styles.timeBtn,
+                  isTiming
+                    ? { backgroundColor: APP_COLORS.primary }
+                    : { backgroundColor: accentSoft },
+                ]}
+                onPress={handleToggleTimer}
                 hitSlop={4}
               >
-                <Text style={[styles.timeBtnText, { color: accentColor }]}>+30m</Text>
+                <Text
+                  style={[
+                    styles.timeBtnText,
+                    isTiming ? { color: '#FFFFFF' } : { color: accentColor },
+                  ]}
+                >
+                  {isTiming ? formatTimerDisplay(elapsedSeconds) : 'Timer'}
+                </Text>
               </Pressable>
             </View>
           </View>
