@@ -23,12 +23,12 @@ export function AppHeader({ onAccountPress, onUpdatePress, onAddPress, loggedIn 
                 style={styles.accountBtn}
                 onPress={onAccountPress}
                 accessibilityRole="button"
-                accessibilityLabel={loggedIn ? 'Account' : 'Sign in'}
+                accessibilityLabel={loggedIn ? 'Logout' : 'Sign in'}
               >
                 {syncing ? (
                   <ActivityIndicator size="small" color={APP_COLORS.headerAccent} />
                 ) : (
-                  <Text style={styles.accountText}>{loggedIn ? '☁ Synced' : '☁ Sign in'}</Text>
+                  <Text style={styles.accountText}>{loggedIn ? 'Logout' : 'Sign in'}</Text>
                 )}
               </Pressable>
             ) : null}
@@ -75,13 +75,13 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   urlText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
   title: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '800',
     color: APP_COLORS.headerText,
     letterSpacing: -0.6,
@@ -98,29 +98,27 @@ const styles = StyleSheet.create({
   accountBtn: {
     backgroundColor: 'rgba(134, 239, 172, 0.15)',
     borderRadius: RADIUS.pill,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs + 2,
+    padding: 5,
     minHeight: 32,
     minWidth: 96,
     alignItems: 'center',
     justifyContent: 'center',
   },
   accountText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '700',
     color: APP_COLORS.headerAccent,
   },
   updateBtn: {
     backgroundColor: 'rgba(134, 239, 172, 0.15)',
     borderRadius: RADIUS.pill,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs + 2,
+    padding: 5,
     minHeight: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
   updateText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '700',
     color: APP_COLORS.headerAccent,
   },
@@ -132,7 +130,7 @@ const styles = StyleSheet.create({
     maxWidth: 180,
   },
   dateText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.headerAccent,
     textAlign: 'right',

@@ -277,6 +277,8 @@ export default function HomeScreen() {
         defaultSection={defaultSection}
         onSave={handleSave}
         onClose={closeModal}
+        onToggle={handleToggle}
+        onDelete={deleteTask}
       />
       <SubtaskModal
         visible={!!manageSubtasksId}
@@ -341,26 +343,26 @@ const styles = StyleSheet.create({
   completedBtn: {
     backgroundColor: APP_COLORS.primary,
     borderRadius: RADIUS.md,
-    paddingVertical: SPACING.lg,
+    padding: 5,
     alignItems: 'center',
     marginTop: SPACING.md,
     borderWidth: 0,
   },
   completedBtnText: {
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   settingsBtn: {
     backgroundColor: 'transparent',
     borderRadius: RADIUS.md,
-    paddingVertical: SPACING.md,
+    padding: 5,
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: APP_COLORS.border,
   },
   settingsBtnText: {
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },

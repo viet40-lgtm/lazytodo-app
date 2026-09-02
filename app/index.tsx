@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     ...softShadow(0.2, 24, 10),
   },
   heroLogo: {
-    fontSize: 18,
+    fontSize: 30,
     fontWeight: '800',
     color: APP_COLORS.headerAccent,
     letterSpacing: 1,
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   heroHeadline: {
-    fontSize: 42,
+    fontSize: 30,
     fontWeight: '900',
     color: '#ffffff',
     textAlign: 'center',
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   heroSub: {
-    fontSize: 17,
+    fontSize: 30,
     fontWeight: '400',
     color: APP_COLORS.headerMuted,
     textAlign: 'center',
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#ffffff',
-    fontSize: 17,
+    fontSize: 30,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
@@ -369,11 +369,11 @@ const styles = StyleSheet.create({
   },
   ghostBtnText: {
     color: APP_COLORS.headerAccent,
-    fontSize: 17,
+    fontSize: 30,
     fontWeight: '600',
   },
   heroNote: {
-    fontSize: 13,
+    fontSize: 30,
     color: 'rgba(187, 247, 208, 0.7)',
     fontWeight: '500',
     textAlign: 'center',
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xxl * 1.5,
   },
   sectionLabel: {
-    fontSize: 12,
+    fontSize: 30,
     fontWeight: '700',
     color: APP_COLORS.primary,
     letterSpacing: 2,
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sectionTitle: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '800',
     color: APP_COLORS.text,
     textAlign: 'center',
@@ -427,14 +427,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   featureIcon: {
-    fontSize: 22,
+    fontSize: 30,
   },
   featureTitle: {
-    fontSize: 16,
+    fontSize: 30,
     fontWeight: '700',
   },
   featureDesc: {
-    fontSize: 13,
+    fontSize: 30,
     color: APP_COLORS.textMuted,
     lineHeight: 19,
   },
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   stepNum: {
-    fontSize: 18,
+    fontSize: 30,
     fontWeight: '800',
     color: APP_COLORS.headerAccent,
   },
@@ -484,13 +484,13 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.xs,
   },
   stepTitle: {
-    fontSize: 17,
+    fontSize: 30,
     fontWeight: '700',
     color: '#ffffff',
     marginBottom: 4,
   },
   stepDesc: {
-    fontSize: 14,
+    fontSize: 30,
     color: APP_COLORS.headerMuted,
     lineHeight: 21,
   },
@@ -519,14 +519,14 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   faqQ: {
-    fontSize: 15,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.text,
     flex: 1,
     lineHeight: 22,
   },
   faqChevron: {
-    fontSize: 22,
+    fontSize: 30,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
     transform: [{ rotate: '90deg' }],
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
     color: APP_COLORS.primary,
   },
   faqA: {
-    fontSize: 14,
+    fontSize: 30,
     color: APP_COLORS.textMuted,
     lineHeight: 22,
     marginTop: SPACING.sm,
@@ -550,14 +550,14 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   bottomCtaTitle: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '800',
     color: APP_COLORS.text,
     textAlign: 'center',
     letterSpacing: -0.5,
   },
   bottomCtaSub: {
-    fontSize: 15,
+    fontSize: 30,
     color: APP_COLORS.textMuted,
     textAlign: 'center',
     marginBottom: SPACING.sm,
@@ -578,13 +578,13 @@ const styles = StyleSheet.create({
     marginHorizontal: SCREEN_PADDING,
   },
   footerLogo: {
-    fontSize: 16,
+    fontSize: 30,
     fontWeight: '800',
     color: APP_COLORS.primaryDark,
     letterSpacing: 0.5,
   },
   footerText: {
-    fontSize: 13,
+    fontSize: 30,
     color: APP_COLORS.textSubtle,
     textAlign: 'center',
   },

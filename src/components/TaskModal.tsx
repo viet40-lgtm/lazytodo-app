@@ -40,6 +40,8 @@ interface TaskModalProps {
     reminderOnly?: boolean;
   }) => void;
   onClose: () => void;
+  onToggle?: (task: Task) => void;
+  onDelete?: (id: string) => void;
 }
 
 const SECTION_OPTIONS: TaskSection[] = ['today', 'weekly', 'monthly', 'yearly'];
@@ -51,12 +53,13 @@ const REPEAT_OPTIONS: { value: Recurring; label: string }[] = [
   { value: 'yearly', label: 'Year' },
 ];
 
-export function TaskModal({ visible, task, defaultSection = 'today', onSave, onClose }: TaskModalProps) {
+export function TaskModal({ visible, task, defaultSection = 'today', onSave, onClose, onToggle, onDelete }: TaskModalProps) {
   const [name, setName] = useState(task?.name ?? '');
   const [section, setSection] = useState<TaskSection>(task?.section ?? defaultSection);
   const [reminder, setReminder] = useState(task?.reminder ?? '');
   const [recurring, setRecurring] = useState<Recurring[]>([]);
   const [reminderOnly, setReminderOnly] = useState(task?.reminderOnly ?? false);
+  const [completed, setCompleted] = useState(task?.completed ?? false);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -67,6 +70,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
     const rec = normalizeRecurring(task?.recurring);
     setRecurring(rec);
     setReminderOnly(task?.reminderOnly ?? false);
+    setCompleted(task?.completed ?? false);
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
   }, [visible, task, defaultSection]);
@@ -98,6 +102,18 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
 
   const toggleRepeat = (value: Recurring) => {
     setRecurring(recurring.includes(value) ? [] : [value]);
+  };
+
+  const handleToggleCompleted = () => {
+    if (!task) return;
+    setCompleted(!completed);
+    onToggle?.(task);
+  };
+
+  const handleDelete = () => {
+    if (!task) return;
+    onDelete?.(task.id);
+    onClose();
   };
 
   const handleSave = () => {
@@ -156,11 +172,6 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                 </Pressable>
               </View>
             </View>
-            {reminderOnly ? (
-              <Text style={styles.subtitle}>
-                Set a date & time to be notified.
-              </Text>
-            ) : null}
           </View>
 
           <ScrollView
@@ -218,7 +229,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                 </View>
                 {reminder ? (
                   <Pressable onPress={() => setReminder('')} style={{ padding: 8 }}>
-                    <Text style={{ color: APP_COLORS.delete, fontSize: 25, fontWeight: '600' }}>Clear</Text>
+                    <Text style={{ color: APP_COLORS.delete, fontSize: 30, fontWeight: '600' }}>Clear</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -257,6 +268,38 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
               </>
             ) : null}
           </ScrollView>
+
+          {task ? (
+            <View style={styles.bottomBar}>
+              <Pressable
+                style={[
+                  styles.bottomCompleteBtn,
+                  completed && styles.bottomCompleteBtnActive,
+                ]}
+                onPress={handleToggleCompleted}
+                accessibilityRole="button"
+                accessibilityLabel="Complete task"
+              >
+                <Text style={[
+                  styles.bottomCompleteText,
+                  completed && styles.bottomCompleteTextActive,
+                ]}>
+                  {completed ? '✓ Completed' : 'Complete'}
+                </Text>
+              </Pressable>
+
+              {onDelete ? (
+                <Pressable
+                  style={styles.bottomDeleteBtn}
+                  onPress={handleDelete}
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete task"
+                >
+                  <Text style={styles.bottomDeleteText}>Delete</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
@@ -275,7 +318,7 @@ const styles = StyleSheet.create({
   },
   typeTab: {
     flex: 1,
-    paddingVertical: SPACING.md,
+    padding: 5,
     borderRadius: RADIUS.md,
     borderWidth: 2,
     borderColor: APP_COLORS.border,
@@ -291,7 +334,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef3c7',
   },
   typeTabText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -318,14 +361,57 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: SPACING.md,
   },
+  headerTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    flexShrink: 1,
+  },
+  headerCheckbox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerCheckboxDone: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
+  },
+  headerCheckmark: {
+    color: APP_COLORS.headerBg,
+    fontSize: 30,
+    fontWeight: '800',
+    lineHeight: 22,
+    marginTop: -2,
+  },
+  modalDeleteBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: APP_COLORS.delete,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalDeleteText: {
+    fontSize: 30,
+    lineHeight: 26,
+    color: APP_COLORS.delete,
+    fontWeight: '800',
+    marginTop: -2,
+  },
   title: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '800',
     color: APP_COLORS.headerText,
     letterSpacing: -0.6,
   },
   subtitle: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '500',
     color: APP_COLORS.headerMuted,
     marginTop: 2,
@@ -340,7 +426,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 25,
+    fontSize: 30,
     lineHeight: 30,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -348,7 +434,7 @@ const styles = StyleSheet.create({
   },
   headerSaveBtn: {
     height: 40,
-    paddingHorizontal: 12,
+    padding: 5,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#FFFFFF',
@@ -356,7 +442,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerSaveText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.6,
@@ -377,7 +463,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   label: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.text,
   },
@@ -388,10 +474,10 @@ const styles = StyleSheet.create({
   requiredHint: {
     fontWeight: '500',
     color: APP_COLORS.delete,
-    fontSize: 25,
+    fontSize: 30,
   },
   input: {
-    fontSize: 25,
+    fontSize: 30,
     borderWidth: 1,
     borderColor: APP_COLORS.border,
     borderRadius: RADIUS.md,
@@ -400,6 +486,26 @@ const styles = StyleSheet.create({
     color: APP_COLORS.text,
     backgroundColor: APP_COLORS.surface,
     ...softShadow(0.04, 6, 2),
+  },
+  inputWithCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  checkbox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkmark: {
+    color: '#ffffff',
+    fontSize: 30,
+    fontWeight: '800',
+    lineHeight: 22,
+    marginTop: -2,
   },
   chipRow: {
     flexDirection: 'row',
@@ -411,15 +517,14 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   repeatTotal: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '700',
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.xs + 2,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm + 2,
+    padding: 5,
     borderRadius: RADIUS.pill,
     borderWidth: 1.5,
     borderColor: APP_COLORS.border,
@@ -430,10 +535,10 @@ const styles = StyleSheet.create({
     borderColor: APP_COLORS.primary,
   },
   chipIcon: {
-    fontSize: 25,
+    fontSize: 30,
   },
   chipText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -441,7 +546,7 @@ const styles = StyleSheet.create({
     color: APP_COLORS.primaryDark,
   },
   alarmChipText: {
-    fontSize: 25,
+    fontSize: 30,
   },
   actions: {
     flexDirection: 'row',
@@ -457,7 +562,7 @@ const styles = StyleSheet.create({
     flex: 2,
     backgroundColor: APP_COLORS.primary,
     borderRadius: RADIUS.md,
-    paddingVertical: SPACING.lg,
+    padding: 5,
     alignItems: 'center',
     ...softShadow(0.2, 12, 4),
   },
@@ -469,20 +574,67 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#fff',
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
   },
   secondaryBtn: {
     flex: 1,
     backgroundColor: APP_COLORS.secondaryBtn,
     borderRadius: RADIUS.md,
-    paddingVertical: SPACING.lg,
+    padding: 5,
     alignItems: 'center',
   },
   secondaryBtnText: {
     color: APP_COLORS.text,
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
+  },
+  bottomBar: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    paddingHorizontal: SCREEN_PADDING,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.lg,
+    borderTopWidth: 1,
+    borderTopColor: APP_COLORS.border,
+    backgroundColor: APP_COLORS.background,
+  },
+  bottomCompleteBtn: {
+    flex: 1,
+    borderRadius: RADIUS.md,
+    padding: 5,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: APP_COLORS.primary,
+    backgroundColor: APP_COLORS.surface,
+    ...softShadow(0.06, 8, 3),
+  },
+  bottomCompleteBtnActive: {
+    backgroundColor: APP_COLORS.primary,
+    borderColor: APP_COLORS.primary,
+  },
+  bottomCompleteText: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: APP_COLORS.primary,
+  },
+  bottomCompleteTextActive: {
+    color: '#FFFFFF',
+  },
+  bottomDeleteBtn: {
+    flex: 1,
+    borderRadius: RADIUS.md,
+    padding: 5,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: APP_COLORS.delete,
+    backgroundColor: APP_COLORS.surface,
+    ...softShadow(0.06, 8, 3),
+  },
+  bottomDeleteText: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: APP_COLORS.delete,
   },
 });
 

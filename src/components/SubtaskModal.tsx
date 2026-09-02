@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.headerMuted,
     marginTop: 4,
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   closeText: {
     color: '#FFFFFF',
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: '800',
     marginTop: -2,
   },
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
   dateLabel: {
-    fontSize: 23,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
     minWidth: 45,
@@ -372,22 +372,20 @@ const styles = StyleSheet.create({
   timeBtn: {
     borderRadius: RADIUS.pill,
     backgroundColor: '#cffafe',
-    paddingHorizontal: 10,
-    paddingVertical: SPACING.sm,
+    padding: 5,
   },
   timeBtnText: {
-    fontSize: 23,
+    fontSize: 30,
     fontWeight: '700',
     color: '#0891b2',
   },
   repeatChip: {
     borderRadius: RADIUS.pill,
     backgroundColor: APP_COLORS.surfaceMuted,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.sm,
+    padding: 5,
   },
   repeatText: {
-    fontSize: 21,
+    fontSize: 30,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },
@@ -397,17 +395,17 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   dailyStatLabel: {
-    fontSize: 22,
+    fontSize: 30,
     fontWeight: '700',
     color: APP_COLORS.primary,
   },
   dailyStatValue: {
-    fontSize: 22,
+    fontSize: 30,
     fontWeight: '800',
     color: APP_COLORS.primary,
   },
   createdText: {
-    fontSize: 23,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
   },
@@ -428,7 +426,7 @@ const styles = StyleSheet.create({
   },
   subtaskCheckmark: {
     color: APP_COLORS.primary,
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '800',
     lineHeight: 25,
     marginTop: -2,
@@ -444,7 +442,7 @@ const styles = StyleSheet.create({
   },
   subtaskName: {
     flex: 1,
-    fontSize: 25,
+    fontSize: 30,
     lineHeight: 28,
     fontWeight: '600',
     color: APP_COLORS.text,
@@ -478,7 +476,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   subtaskDate: {
-    fontSize: 16,
+    fontSize: 30,
     color: APP_COLORS.textSubtle,
   },
   corner: {
@@ -503,7 +501,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   arrowText: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '900',
     color: APP_COLORS.delete,
     lineHeight: 32,
@@ -519,7 +517,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   subtaskDeleteText: {
-    fontSize: 23,
+    fontSize: 30,
     lineHeight: 25,
     color: APP_COLORS.delete,
     fontWeight: '700',
@@ -532,7 +530,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 22,
+    fontSize: 30,
     color: '#000',
     backgroundColor: APP_COLORS.surface,
     borderRadius: RADIUS.md,
@@ -553,7 +551,7 @@ const styles = StyleSheet.create({
   },
   addText: {
     color: '#fff',
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '300',
     marginTop: -4,
   },
@@ -574,7 +572,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerSaveText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.6,
@@ -587,7 +585,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: '700',
   },
 });

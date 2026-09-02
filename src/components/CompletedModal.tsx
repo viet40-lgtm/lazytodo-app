@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: '800',
     color: '#FFFFFF',
     marginTop: -2,
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   emptyText: {
-    fontSize: 20,
+    fontSize: 30,
     color: APP_COLORS.textMuted,
     textAlign: 'center',
     marginTop: SPACING.xl,
@@ -191,14 +191,14 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   taskName: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '700',
     color: APP_COLORS.text,
     opacity: 0.6,
     marginTop: 8,
   },
   taskDate: {
-    fontSize: 20,
+    fontSize: 30,
     color: '#000000',
     flex: 1,
   },
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.md,
   },
   deleteText: {
-    fontSize: 23,
+    fontSize: 30,
     lineHeight: 25,
     color: APP_COLORS.delete,
     fontWeight: '700',
@@ -222,12 +222,12 @@ const styles = StyleSheet.create({
   moreBtn: {
     backgroundColor: APP_COLORS.primary,
     borderRadius: RADIUS.pill,
-    paddingVertical: SPACING.lg,
+    padding: 5,
     alignItems: 'center',
     marginTop: SPACING.md,
   },
   moreText: {
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: '700',
     color: '#FFFFFF',
   },

@@ -260,13 +260,13 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   title: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '800',
     color: APP_COLORS.headerText,
     letterSpacing: -0.6,
   },
   subtitle: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '500',
     color: APP_COLORS.headerMuted,
     marginTop: 2,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 25,
+    fontSize: 30,
     lineHeight: 25,
     fontWeight: '700',
     color: APP_COLORS.headerMuted,
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: SPACING.sm + 2,
+    padding: 5,
     borderRadius: RADIUS.sm,
     alignItems: 'center',
   },
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     ...softShadow(0.06, 6, 2),
   },
   segmentText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -324,17 +324,17 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   label: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.text,
   },
   email: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '700',
     color: APP_COLORS.primaryDark,
   },
   input: {
-    fontSize: 25,
+    fontSize: 30,
     borderWidth: 1,
     borderColor: APP_COLORS.border,
     borderRadius: RADIUS.md,
@@ -345,12 +345,12 @@ const styles = StyleSheet.create({
     ...softShadow(0.04, 6, 2),
   },
   error: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.delete,
   },
   info: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.primaryDark,
   },
@@ -361,14 +361,14 @@ const styles = StyleSheet.create({
     ...softShadow(0.04, 6, 2),
   },
   noticeText: {
-    fontSize: 25,
+    fontSize: 30,
     lineHeight: 32,
     color: APP_COLORS.textMuted,
   },
   primaryBtn: {
     backgroundColor: APP_COLORS.primary,
     borderRadius: RADIUS.md,
-    paddingVertical: SPACING.lg,
+    padding: 5,
     alignItems: 'center',
     ...softShadow(0.2, 12, 4),
   },
@@ -377,18 +377,18 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: APP_COLORS.fabText,
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '700',
   },
   skipBtn: {
-    paddingVertical: SPACING.md,
+    padding: 5,
     alignItems: 'center',
   },
   skipBtnPressed: {
     opacity: 0.6,
   },
   skipBtnText: {
-    fontSize: 16,
+    fontSize: 30,
     fontWeight: '500',
     color: APP_COLORS.textMuted,
     textDecorationLine: 'underline',

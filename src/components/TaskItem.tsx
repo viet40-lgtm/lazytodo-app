@@ -131,14 +131,6 @@ function TaskRow({
           <Text style={styles.arrowText}>↑</Text>
         </Pressable>
       </View>
-      <Pressable
-        style={styles.webDelete}
-        onPress={() => onDelete(task.id)}
-        accessibilityLabel={`Delete ${task.name}`}
-        hitSlop={6}
-      >
-        <Text style={styles.webDeleteText}>X</Text>
-      </Pressable>
     </View>
   );
 
@@ -168,18 +160,18 @@ function TaskRow({
           <View style={styles.row1Right}>
             {showDaily && (
               <View style={styles.statChip}>
-                <Text style={[styles.statLabel, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '700' }]}>D:</Text>
-                <Text style={[styles.statValue, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '800' }]}> 
+                <Text style={[styles.statLabel, { fontSize: 30, color: APP_COLORS.primary, fontWeight: '700' }]}>D:</Text>
+                <Text style={[styles.statValue, { fontSize: 30, color: APP_COLORS.primary, fontWeight: '800' }]}> 
                   {formatDuration(minutesForSectionIncludingSubtasks(task, 'daily'))}
                 </Text>
               </View>
             )}
             {!showDaily && listSection !== 'today' && hasRecurring(task) ? (
               <View style={styles.statChip}>
-                <Text style={[styles.statLabel, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '700' }]}> 
+                <Text style={[styles.statLabel, { fontSize: 30, color: APP_COLORS.primary, fontWeight: '700' }]}> 
                   {STAT_LABEL[listSection]}
                 </Text>
-                <Text style={[styles.statValue, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '800' }]}> 
+                <Text style={[styles.statValue, { fontSize: 30, color: APP_COLORS.primary, fontWeight: '800' }]}> 
                   {formatDuration(minutesForSectionIncludingSubtasks(task, listSection))}
                 </Text>
               </View>
@@ -189,22 +181,8 @@ function TaskRow({
         </View>
       )}
 
-      {/* 2nd line: check off circle, name */}
+      {/* 2nd line: name, subtasks button */}
       <View style={styles.row2}>
-        <Pressable
-          style={[
-            styles.checkbox,
-            { borderColor: APP_COLORS.primary },
-            done && { backgroundColor: APP_COLORS.primary, borderColor: APP_COLORS.primary },
-          ]}
-          onPress={() => onToggle(task)}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: done }}
-          hitSlop={8}
-        >
-          {done ? <Text style={styles.checkmark}>✓</Text> : null}
-        </Pressable>
-
         <Pressable style={styles.titleArea} onPress={() => onEdit(task)}>
           <Text style={[styles.name, done && styles.nameDone]}>
             {task.name}
@@ -295,7 +273,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   dateLabel: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
     minWidth: 45,
@@ -316,7 +294,7 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: '#ffffff',
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '800',
     lineHeight: 22,
     marginTop: -2,
@@ -336,7 +314,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   arrowText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '900',
     color: APP_COLORS.delete,
     lineHeight: 29,
@@ -348,7 +326,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   name: {
-    fontSize: 25,
+    fontSize: 30,
     lineHeight: 25,
     fontWeight: '600',
     color: APP_COLORS.text,
@@ -401,7 +379,7 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   metaText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
     flexShrink: 1,
@@ -420,11 +398,10 @@ const styles = StyleSheet.create({
   },
   timeBtn: {
     borderRadius: RADIUS.pill,
-    paddingHorizontal: 10,
-    paddingVertical: SPACING.sm,
+    padding: 5,
   },
   timeBtnText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '700',
   },
   repeatChip: {
@@ -434,7 +411,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   repeatText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },
@@ -445,7 +422,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   spentText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '700',
     color: APP_COLORS.primary,
   },
@@ -461,7 +438,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   createdText: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
   },
@@ -476,7 +453,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   webDeleteText: {
-    fontSize: 21,
+    fontSize: 30,
     lineHeight: 22,
     color: APP_COLORS.delete,
     fontWeight: '700',
@@ -496,12 +473,12 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   statLabel: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '500',
     color: APP_COLORS.textSubtle,
   },
   statValue: {
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },
