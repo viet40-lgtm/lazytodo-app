@@ -24,14 +24,14 @@ const styles = StyleSheet.create({
     ...softShadow(0.06, 10, 3),
   },
   mark: {
-    fontSize: 30,
+    fontSize: 25,
     lineHeight: 30,
     fontWeight: '800',
     color: APP_COLORS.accentSoft,
     marginBottom: -8,
   },
   text: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     lineHeight: 28,
     color: APP_COLORS.quote,

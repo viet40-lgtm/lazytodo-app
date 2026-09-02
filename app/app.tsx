@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   completedBtnText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     borderColor: APP_COLORS.border,
   },
   settingsBtnText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },

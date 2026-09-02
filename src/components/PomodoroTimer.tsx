@@ -155,15 +155,15 @@ export function PomodoroTimer() {
 
 const styles = StyleSheet.create({
   card: { backgroundColor: APP_COLORS.surface, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: '#000000', padding: SPACING.lg, gap: SPACING.md, ...softShadow(0.07, 12, 4) },
-  title: { fontSize: 30, fontWeight: '700', color: APP_COLORS.primary, textAlign: 'center' },
+  title: { fontSize: 25, fontWeight: '700', color: APP_COLORS.primary, textAlign: 'center' },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
-  date: { fontSize: 30, fontWeight: '700', color: APP_COLORS.primary },
+  date: { fontSize: 25, fontWeight: '700', color: APP_COLORS.primary },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 15, flexWrap: 'nowrap', width: '100%' },
-   timer: { width: 110, height: 50, borderWidth: 1.5, borderColor: APP_COLORS.primary, borderRadius: RADIUS.md, paddingLeft: 1, paddingRight: 1, paddingTop: 1, paddingBottom: 1, textAlign: 'center', textAlignVertical: 'center', fontSize: 30, fontWeight: '800', color: APP_COLORS.primary },
+   timer: { width: 110, height: 50, borderWidth: 1.5, borderColor: APP_COLORS.primary, borderRadius: RADIUS.md, paddingLeft: 1, paddingRight: 1, paddingTop: 1, paddingBottom: 1, textAlign: 'center', textAlignVertical: 'center', fontSize: 25, fontWeight: '800', color: APP_COLORS.primary },
   runningTimer: { width: 110 },
   button: { width: 96, height: 50, backgroundColor: APP_COLORS.primary, borderRadius: RADIUS.pill, padding: 5, justifyContent: 'center', alignItems: 'center', ...softShadow(0.12, 8, 3) },
-   buttonText: { color: '#fff', fontSize: 30, fontWeight: '800' },
+   buttonText: { color: '#fff', fontSize: 25, fontWeight: '800' },
   totalBox: { width: 110, height: 50, borderWidth: 1.5, borderColor: APP_COLORS.primary, borderRadius: RADIUS.md, paddingHorizontal: 1, justifyContent: 'center', alignItems: 'center' },
-   totalText: { fontSize: 30, fontWeight: '800', color: APP_COLORS.delete },
+   totalText: { fontSize: 25, fontWeight: '800', color: APP_COLORS.delete },
   pressed: { opacity: 0.7 },
 });

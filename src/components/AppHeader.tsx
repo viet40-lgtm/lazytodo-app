@@ -80,13 +80,13 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   urlText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
   title: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: APP_COLORS.headerText,
     letterSpacing: -0.6,
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   accountText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.headerAccent,
   },
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   updateText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.headerAccent,
   },
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     maxWidth: 180,
   },
   dateText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.headerAccent,
     textAlign: 'right',

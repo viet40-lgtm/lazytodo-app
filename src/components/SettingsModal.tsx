@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     backgroundColor: APP_COLORS.headerBg,
   },
   title: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: '#fff',
     letterSpacing: -0.5,
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: '#fff',
   },
@@ -167,13 +167,13 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   sectionTitle: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: APP_COLORS.text,
     letterSpacing: -0.3,
   },
   sectionDesc: {
-    fontSize: 30,
+    fontSize: 25,
     color: APP_COLORS.textMuted,
     lineHeight: 22,
   },
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     backgroundColor: APP_COLORS.primary,
   },
   btnIcon: {
-    fontSize: 30,
+    fontSize: 25,
     width: 36,
     textAlign: 'center',
     color: APP_COLORS.primary,
@@ -203,12 +203,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   btnLabel: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.text,
   },
   btnSub: {
-    fontSize: 30,
+    fontSize: 25,
     color: APP_COLORS.textMuted,
   },
   statusBox: {
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.text,
   },
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     borderColor: '#bbf7d0',
   },
   infoText: {
-    fontSize: 30,
+    fontSize: 25,
     color: '#166534',
     lineHeight: 20,
   },
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   installBtnText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: '#fff',
   },
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     borderColor: '#fde68a',
   },
   guideText: {
-    fontSize: 30,
+    fontSize: 25,
     color: '#92400e',
     lineHeight: 22,
   },

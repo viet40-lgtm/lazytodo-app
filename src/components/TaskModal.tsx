@@ -229,7 +229,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
                 </View>
                 {reminder ? (
                   <Pressable onPress={() => setReminder('')} style={{ padding: 8 }}>
-                    <Text style={{ color: APP_COLORS.delete, fontSize: 30, fontWeight: '600' }}>Clear</Text>
+                    <Text style={{ color: APP_COLORS.delete, fontSize: 25, fontWeight: '600' }}>Clear</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef3c7',
   },
   typeTabText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   },
   headerCheckmark: {
     color: APP_COLORS.headerBg,
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     lineHeight: 22,
     marginTop: -2,
@@ -398,20 +398,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalDeleteText: {
-    fontSize: 30,
+    fontSize: 25,
     lineHeight: 26,
     color: APP_COLORS.delete,
     fontWeight: '800',
     marginTop: -2,
   },
   title: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: APP_COLORS.headerText,
     letterSpacing: -0.6,
   },
   subtitle: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '500',
     color: APP_COLORS.headerMuted,
     marginTop: 2,
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerSaveText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.6,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   label: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.text,
   },
@@ -470,10 +470,10 @@ const styles = StyleSheet.create({
   requiredHint: {
     fontWeight: '500',
     color: APP_COLORS.delete,
-    fontSize: 30,
+    fontSize: 25,
   },
   input: {
-    fontSize: 30,
+    fontSize: 25,
     borderWidth: 1,
     borderColor: APP_COLORS.border,
     borderRadius: RADIUS.md,
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: '#ffffff',
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     lineHeight: 22,
     marginTop: -2,
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   repeatTotal: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
   },
   chip: {
@@ -531,10 +531,10 @@ const styles = StyleSheet.create({
     borderColor: APP_COLORS.primary,
   },
   chipIcon: {
-    fontSize: 30,
+    fontSize: 25,
   },
   chipText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     color: APP_COLORS.primaryDark,
   },
   alarmChipText: {
-    fontSize: 30,
+    fontSize: 25,
   },
   actions: {
     flexDirection: 'row',
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#fff',
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
   },
   secondaryBtn: {
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     color: APP_COLORS.text,
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
   },
   bottomBar: {
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
     borderColor: APP_COLORS.primary,
   },
   bottomCompleteText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.primary,
   },
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
     ...softShadow(0.06, 8, 3),
   },
   bottomDeleteText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.delete,
   },

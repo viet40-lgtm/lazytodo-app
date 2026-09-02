@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     backgroundColor: APP_COLORS.headerBg,
   },
   title: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.6,
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   emptyText: {
-    fontSize: 30,
+    fontSize: 25,
     color: APP_COLORS.textMuted,
     textAlign: 'center',
     marginTop: SPACING.xl,
@@ -189,14 +189,14 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   taskName: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.text,
     opacity: 0.6,
     marginTop: 8,
   },
   taskDate: {
-    fontSize: 30,
+    fontSize: 25,
     color: '#000000',
     flex: 1,
   },
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.md,
   },
   deleteText: {
-    fontSize: 30,
+    fontSize: 25,
     lineHeight: 25,
     color: APP_COLORS.delete,
     fontWeight: '700',
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
   moreText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: '#FFFFFF',
   },

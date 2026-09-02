@@ -55,12 +55,12 @@ const styles = StyleSheet.create({
     ...softShadow(0.15, 16, 6),
   },
   title: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: APP_COLORS.text,
   },
   message: {
-    fontSize: 30,
+    fontSize: 25,
     lineHeight: 28,
     color: APP_COLORS.textMuted,
   },
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.text,
   },
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   confirmText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: '#ffffff',
   },

@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     ...softShadow(0.18, 16, 6),
   },
   urlText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: '#FFFFFF',
     marginBottom: 12,
@@ -260,13 +260,13 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   title: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     color: APP_COLORS.headerText,
     letterSpacing: -0.6,
   },
   subtitle: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '500',
     color: APP_COLORS.headerMuted,
     marginTop: 2,
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    fontSize: 30,
+    fontSize: 25,
     lineHeight: 25,
     fontWeight: '700',
     color: APP_COLORS.headerMuted,
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     ...softShadow(0.06, 6, 2),
   },
   segmentText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
   },
@@ -323,17 +323,17 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   label: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.text,
   },
   email: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.primaryDark,
   },
   input: {
-    fontSize: 30,
+    fontSize: 25,
     borderWidth: 1,
     borderColor: APP_COLORS.border,
     borderRadius: RADIUS.md,
@@ -344,12 +344,12 @@ const styles = StyleSheet.create({
     ...softShadow(0.04, 6, 2),
   },
   error: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.delete,
   },
   info: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.primaryDark,
   },
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     ...softShadow(0.04, 6, 2),
   },
   noticeText: {
-    fontSize: 30,
+    fontSize: 25,
     lineHeight: 32,
     color: APP_COLORS.textMuted,
   },
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: APP_COLORS.fabText,
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
   },
   skipBtn: {
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   skipBtnText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '500',
     color: APP_COLORS.textMuted,
     textDecorationLine: 'underline',

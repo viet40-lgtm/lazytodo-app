@@ -229,18 +229,18 @@ function TaskRow({
           <View style={styles.row1Right}>
             {showDaily && (
               <View style={styles.statChip}>
-                <Text style={[styles.statLabel, { fontSize: 30, color: APP_COLORS.primary, fontWeight: '700' }]}>D:</Text>
-                <Text style={[styles.statValue, { fontSize: 30, color: APP_COLORS.primary, fontWeight: '800' }]}> 
+                <Text style={[styles.statLabel, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '700' }]}>D:</Text>
+                <Text style={[styles.statValue, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '800' }]}> 
                   {formatDuration(minutesForSectionIncludingSubtasks(task, 'daily'))}
                 </Text>
               </View>
             )}
             {!showDaily && listSection !== 'today' && hasRecurring(task) ? (
               <View style={styles.statChip}>
-                <Text style={[styles.statLabel, { fontSize: 30, color: APP_COLORS.primary, fontWeight: '700' }]}> 
+                <Text style={[styles.statLabel, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '700' }]}> 
                   {STAT_LABEL[listSection]}
                 </Text>
-                <Text style={[styles.statValue, { fontSize: 30, color: APP_COLORS.primary, fontWeight: '800' }]}> 
+                <Text style={[styles.statValue, { fontSize: 25, color: APP_COLORS.primary, fontWeight: '800' }]}> 
                   {formatDuration(minutesForSectionIncludingSubtasks(task, listSection))}
                 </Text>
               </View>
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   dateLabel: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
     minWidth: 45,
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: '#ffffff',
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '800',
     lineHeight: 22,
     marginTop: -2,
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   arrowText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '900',
     color: APP_COLORS.delete,
     lineHeight: 29,
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   name: {
-    fontSize: 30,
+    fontSize: 25,
     lineHeight: 25,
     fontWeight: '600',
     color: APP_COLORS.text,
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   metaText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textMuted,
     flexShrink: 1,
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   timeBtnText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
   },
   repeatChip: {
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   repeatText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   spentText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.primary,
   },
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   createdText: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '600',
     color: APP_COLORS.textSubtle,
   },
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   webDeleteText: {
-    fontSize: 30,
+    fontSize: 25,
     lineHeight: 22,
     color: APP_COLORS.delete,
     fontWeight: '700',
@@ -542,12 +542,12 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   statLabel: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '500',
     color: APP_COLORS.textSubtle,
   },
   statValue: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: '700',
     color: APP_COLORS.textMuted,
   },
