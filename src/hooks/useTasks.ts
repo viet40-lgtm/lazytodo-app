@@ -327,30 +327,40 @@ export function useTasks(userId: string | null = null) {
 
 
 
-  // Daily reset for persistent habits:
-  // Any task with a timeLogs field (even empty []) is a habit — it means
-  // the user has interacted with it as a recurring task.
+  // Daily reset only for daily recurring tasks / persistent habits at 12:00 AM midnight:
   useEffect(() => {
-    if (!hydrated || !state) return;
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayMs = todayStart.getTime();
-    // H3: use timeLogs !== undefined (presence check) instead of .length > 0
-    // Fix: Since withRecurringSeries initializes timeLogs to [], we must check length.
-    const isHabit = (t: Task) => t.persistent || (t.timeLogs?.length ?? 0) > 0;
-    const toReset = state.tasks.filter(
-      (t) => isHabit(t) && t.completed && !t.deleted && (t.completedAt ?? 0) < todayMs,
-    );
-    if (toReset.length === 0) return;
-    updateTasks((tasks: Task[]) =>
-      tasks.map((t) =>
-        isHabit(t) && t.completed && !t.deleted && (t.completedAt ?? 0) < todayMs
-          ? { ...t, completed: false, completedAt: undefined, updatedAt: Date.now() }
-          : t,
-      ),
-    );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
+    if (!hydrated) return;
+
+    const checkMidnightReset = () => {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayMs = todayStart.getTime();
+
+      const isDaily = (t: Task) =>
+        t.section === 'daily' ||
+        normalizeRecurring(t.recurring).includes('daily') ||
+        Boolean(t.persistent);
+
+      updateTasks((tasks: Task[]) => {
+        const toReset = tasks.some(
+          (t) => isDaily(t) && t.completed && !t.deleted && (t.completedAt ?? 0) < todayMs,
+        );
+        if (!toReset) return tasks;
+
+        return tasks.map((t) =>
+          isDaily(t) && t.completed && !t.deleted && (t.completedAt ?? 0) < todayMs
+            ? { ...t, completed: false, completedAt: undefined, updatedAt: Date.now() }
+            : t,
+        );
+      });
+    };
+
+    checkMidnightReset();
+
+    // Check every minute so it automatically resets at 12:00 AM midnight while app is open
+    const interval = setInterval(checkMidnightReset, 60000);
+    return () => clearInterval(interval);
+  }, [hydrated, updateTasks]);
 
 
 
