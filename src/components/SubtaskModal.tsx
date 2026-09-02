@@ -402,7 +402,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 30,
     fontWeight: '800',
-    marginTop: -2,
   },
   scroll: {
     flex: 1,

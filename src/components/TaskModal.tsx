@@ -426,10 +426,8 @@ const styles = StyleSheet.create({
   },
   closeText: {
     fontSize: 30,
-    lineHeight: 30,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginTop: -4,
   },
   headerSaveBtn: {
     padding: 10,

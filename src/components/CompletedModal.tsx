@@ -161,7 +161,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginTop: -2,
   },
   content: {
     padding: SCREEN_PADDING,
