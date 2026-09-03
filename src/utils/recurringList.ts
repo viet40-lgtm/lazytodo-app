@@ -35,12 +35,17 @@ export function sectionForReminder(reminder: string, now = new Date()): TaskSect
 
   const weekStart = new Date(today);
   const day = weekStart.getDay();
-  weekStart.setDate(weekStart.getDate() + (day === 0 ? -6 : 1 - day));
+  weekStart.setDate(weekStart.getDate() - day);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
   weekEnd.setHours(23, 59, 59, 999);
 
-  return pickedDay.getTime() <= weekEnd.getTime() ? 'weekly' : 'monthly';
+  if (pickedDay.getTime() <= weekEnd.getTime()) return 'weekly';
+
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+  if (pickedDay.getTime() <= monthEnd.getTime()) return 'monthly';
+
+  return 'yearly';
 }
 
 export function primarySection(repeats: Recurring[]): TaskSection | null {
@@ -76,7 +81,16 @@ export function taskShowsInSection(
   }
 
   if (task.reminder && task.section !== 'daily') {
-    return sectionForReminder(task.reminder, new Date(now)) === section;
+    const reminderDate = new Date(task.reminder);
+    const currentDate = new Date(now);
+    if (
+      section === 'yearly' &&
+      !isNaN(reminderDate.getTime()) &&
+      reminderDate.getFullYear() !== currentDate.getFullYear()
+    ) {
+      return false;
+    }
+    return sectionForReminder(task.reminder, currentDate) === section;
   }
 
   return task.section === section;

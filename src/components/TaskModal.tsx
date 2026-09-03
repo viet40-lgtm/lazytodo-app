@@ -76,7 +76,7 @@ export function TaskModal({ visible, task, defaultSection = 'today', onSave, onC
   }, [visible, task, defaultSection]);
 
   // Section is always derived from the reminder date.
-  // No date → Today. Date within 7 days → Week. Within 30 → Month. Beyond → Year.
+  // No date -> Today. Dates use the current calendar week, month, and year.
   useEffect(() => {
     if (!reminder) {
       // No date: default to today section.
