@@ -10,6 +10,7 @@ import {
   spawnNextOccurrence,
   withRecurringSeries,
 } from '../utils/taskSeries';
+import { mergeAppState, mergeJournals, mergeTasks } from '../utils/merge';
 
 const JOURNAL_STORAGE_KEY = 'lazy_todo_journals_v1';
 
@@ -21,40 +22,6 @@ function getLocalJournals(): JournalEntry[] {
   } catch {
     return [];
   }
-}
-
-function hasJournalContent(j: JournalEntry): boolean {
-  return Boolean(
-    (j.thoughts && j.thoughts.trim().length > 0) ||
-    (j.gratefulness && j.gratefulness.trim().length > 0)
-  );
-}
-
-function mergeJournals(cloud: JournalEntry[] = [], local: JournalEntry[] = []): JournalEntry[] {
-  const map = new Map<string, JournalEntry>();
-  for (const j of cloud) {
-    map.set(j.date || j.id, j);
-  }
-  for (const j of local) {
-    const key = j.date || j.id;
-    const existing = map.get(key);
-    if (!existing) {
-      if (hasJournalContent(j)) {
-        map.set(key, j);
-      }
-    } else {
-      const localHas = hasJournalContent(j);
-      const existingHas = hasJournalContent(existing);
-      if (localHas && !existingHas) {
-        map.set(key, j);
-      } else if (localHas && existingHas) {
-        if ((j.updatedAt ?? 0) > (existing.updatedAt ?? 0)) {
-          map.set(key, j);
-        }
-      }
-    }
-  }
-  return Array.from(map.values()).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
 }
 
 function sortTasks(tasks: Task[]): Task[] {
@@ -102,29 +69,32 @@ export function useTasks(userId: string | null = null) {
       setState({ tasks: [], journals: localJ, savedAt: Date.now() });
       setHydrated(true);
     } else {
-      // Logged-in mode: load from cloud.
+      // Logged-in mode: load from cloud and merge with local
       setSyncing(true);
       pullRemoteState(userId)
-        .then((remote) => {
+        .then(async (remote) => {
           if (!active) return;
           const localJ = getLocalJournals();
-          const mergedJ = mergeJournals(remote?.journals ?? [], localJ);
-          const nextState: AppState = {
-            ...(remote ?? { tasks: [], savedAt: Date.now() }),
-            journals: mergedJ,
-          };
-          setState(nextState);
+          const current = stateRef.current;
+          const merged = mergeAppState(remote, current, localJ);
+          setState(merged);
+          stateRef.current = merged;
           try {
-            if (typeof localStorage !== 'undefined') {
-              localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(mergedJ));
+            if (typeof localStorage !== 'undefined' && merged.journals) {
+              localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(merged.journals));
             }
           } catch {}
           setHydrated(true);
           setSyncing(false);
+
+          // If local had tasks that were not in remote, push the merged state to cloud
+          if (current && current.tasks && current.tasks.length > 0) {
+            await pushRemoteState(userId, merged).catch(() => {});
+          }
         })
-      // H4: On network failure, DON'T set empty state — that would erase cloud data
-      // on the next push. Keep hydrated=false so a retry/reload is required.
-          .catch(() => {
+        // H4: On network failure, DON'T set empty state — that would erase cloud data
+        // on the next push. Keep hydrated=false so a retry/reload is required.
+        .catch(() => {
           if (!active) return;
           const localJ = getLocalJournals();
           setState({ tasks: [], journals: localJ, savedAt: 0 });
@@ -138,7 +108,7 @@ export function useTasks(userId: string | null = null) {
     };
   }, [userId]);
 
-  // Persist state changes to cloud for logged-in users.
+  // Persist state changes to cloud for logged-in users with two-way merge
   useEffect(() => {
     if (!hydrated || !state) return;
     if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
@@ -154,14 +124,27 @@ export function useTasks(userId: string | null = null) {
         pendingPushRef.current = false;
         try {
           const snapshot = stateRef.current;
-          if (snapshot) await pushRemoteState(userId, snapshot).catch(() => {});
+          if (!snapshot) return;
+          // Merge with latest remote before pushing so we don't overwrite another device's updates
+          const remote = await pullRemoteState(userId);
+          const localJ = getLocalJournals();
+          const merged = remote ? mergeAppState(remote, snapshot, localJ) : snapshot;
+          stateRef.current = merged;
+          setState(merged);
+          await pushRemoteState(userId, merged).catch(() => {});
         } finally {
           pushingRef.current = false;
           if (pendingPushRef.current) {
-            // A state change came in while we were pushing — push once more.
             pendingPushRef.current = false;
             const latest = stateRef.current;
-            if (latest) await pushRemoteState(userId, latest).catch(() => {});
+            if (latest) {
+              const remote = await pullRemoteState(userId);
+              const localJ = getLocalJournals();
+              const merged = remote ? mergeAppState(remote, latest, localJ) : latest;
+              stateRef.current = merged;
+              setState(merged);
+              await pushRemoteState(userId, merged).catch(() => {});
+            }
           }
         }
       };
@@ -172,23 +155,24 @@ export function useTasks(userId: string | null = null) {
     };
   }, [state, hydrated, userId]);
 
-  // Real-time subscription — instantly reflect changes from other devices.
+  // Real-time subscription — instantly reflect changes from other devices via merge
   useEffect(() => {
     if (!userId) return;
     let active = true;
     const channel = subscribeToRemoteState(userId, (remote) => {
       if (!active) return;
       setState((prev) => {
-        // Ignore incoming remote state if we have newer local changes pending.
-        if (prev && prev.savedAt > remote.savedAt) {
-          return prev;
-        }
-        if (remote.journals && typeof localStorage !== 'undefined') {
+        if (!prev) return remote;
+        const localJ = getLocalJournals();
+        const merged = mergeAppState(remote, prev, localJ);
+        stateRef.current = merged;
+
+        if (merged.journals && typeof localStorage !== 'undefined') {
           try {
-            localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(remote.journals));
+            localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(merged.journals));
           } catch {}
         }
-        return remote;
+        return merged;
       });
     });
     return () => {
@@ -197,26 +181,26 @@ export function useTasks(userId: string | null = null) {
     };
   }, [userId]);
 
-  // Manual force sync — push latest local changes and pull from cloud.
+  // Manual force sync — pull from cloud, merge with local, update local, and push merged back
   const forceSync = useCallback(async () => {
     if (!userId) return;
     setSyncing(true);
     try {
-      const snapshot = stateRef.current;
-      if (snapshot) {
-        await pushRemoteState(userId, snapshot).catch(() => {});
-      }
+      const localJ = getLocalJournals();
       const remote = await pullRemoteState(userId);
-      if (remote) {
-        const localJ = getLocalJournals();
-        const mergedJ = mergeJournals(remote.journals ?? [], localJ);
-        setState({ ...remote, journals: mergedJ });
+      const current = stateRef.current;
+      const merged = mergeAppState(remote, current, localJ);
+
+      setState(merged);
+      stateRef.current = merged;
+
+      if (typeof localStorage !== 'undefined' && merged.journals) {
         try {
-          if (typeof localStorage !== 'undefined') {
-            localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(mergedJ));
-          }
+          localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(merged.journals));
         } catch {}
       }
+
+      await pushRemoteState(userId, merged).catch(() => {});
     } catch {
       // Sync errors are non-fatal.
     } finally {

@@ -18,7 +18,7 @@ import { normalizeRecurring } from '../utils/recurringList';
 import { recurringLabelShort } from '../utils/series';
 import { formatDuration } from '../utils/time';
 import { minutesForTimeLogs } from '../utils/periodTotals';
-import { playLongBeep } from '../utils/sound';
+import { formatTimerDisplay, useTimer } from '../context/TimerContext';
 
 interface SubtaskModalProps {
   visible: boolean;
@@ -48,60 +48,19 @@ function SubtaskRowItem({
   onEditName,
 }: SubtaskRowItemProps) {
   const theme = getSectionTheme(taskSection);
-  const [isTiming, setIsTiming] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const secondsRef = useRef(0);
-  const loggedMinutesRef = useRef(0);
-  const onLogTimeRef = useRef(onLogTime);
-  onLogTimeRef.current = onLogTime;
-  const stIdRef = useRef(st.id);
-  stIdRef.current = st.id;
+  const { isTiming, getElapsedSeconds, toggleTimer, registerMinuteTick } = useTimer();
+  const timerId = `subtask:${st.id}`;
+  const timing = isTiming(timerId);
+  const elapsedSeconds = getElapsedSeconds(timerId);
 
   useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
+    return registerMinuteTick(timerId, () => {
+      onLogTime(st.id, 1);
+    });
+  }, [timerId, st.id, onLogTime, registerMinuteTick]);
 
   const handleToggleTimer = () => {
-    if (isTiming) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      setIsTiming(false);
-      const unloggedSeconds = secondsRef.current - loggedMinutesRef.current * 60;
-      if (unloggedSeconds >= 30 || (loggedMinutesRef.current === 0 && unloggedSeconds > 0)) {
-        onLogTimeRef.current(stIdRef.current, 1);
-      }
-      loggedMinutesRef.current = 0;
-      secondsRef.current = 0;
-      setElapsedSeconds(0);
-    } else {
-      setIsTiming(true);
-      secondsRef.current = 0;
-      setElapsedSeconds(0);
-      loggedMinutesRef.current = 0;
-      intervalRef.current = setInterval(() => {
-        secondsRef.current += 1;
-        const currentSecs = secondsRef.current;
-        setElapsedSeconds(currentSecs);
-        if (currentSecs > 0 && currentSecs % 60 === 0) {
-          playLongBeep(1.0);
-          onLogTimeRef.current(stIdRef.current, 1);
-          loggedMinutesRef.current += 1;
-        }
-      }, 1000);
-    }
-  };
-
-  const formatTimerDisplay = (sec: number) => {
-    const mm = Math.floor(sec / 60);
-    const ss = sec % 60;
-    return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+    toggleTimer(timerId, () => onLogTime(st.id, 1));
   };
 
   return (
@@ -120,7 +79,7 @@ function SubtaskRowItem({
             <Pressable
               style={[
                 styles.timeBtn,
-                isTiming && { backgroundColor: APP_COLORS.primary },
+                timing && { backgroundColor: APP_COLORS.primary },
               ]}
               onPress={handleToggleTimer}
               hitSlop={4}
@@ -128,10 +87,10 @@ function SubtaskRowItem({
               <Text
                 style={[
                   styles.timeBtnText,
-                  isTiming && { color: '#FFFFFF' },
+                  timing && { color: '#FFFFFF' },
                 ]}
               >
-                {isTiming ? formatTimerDisplay(elapsedSeconds) : 'Timer'}
+                {elapsedSeconds > 0 ? formatTimerDisplay(elapsedSeconds) : 'Timer'}
               </Text>
             </Pressable>
           </View>
